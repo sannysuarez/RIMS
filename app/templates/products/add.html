@@ -1,0 +1,165 @@
+<!-- Add Product -->
+{% extends "base.html" %}
+
+{% block title %}Add Product - Raasu{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Product</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="product_name" class="form-label">Product Name *</label>
+                            <input type="text" class="form-control" id="product_name" name="product_name"
+                                   value="{{ request.form.product_name }}" required>
+                            <div class="invalid-feedback">
+                                Please provide a product name.
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="category_id" class="form-label">Category *</label>
+                            <select class="form-select" id="category_id" name="category_id" required>
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if request.form.category_id == category.id|string %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a unit.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="unit_type" class="form-label">Unit Type *</label>
+                            <select class="form-select" id="unit_type" name="unit_type" required>
+                                <option value="">Select Type</option>
+                                <option value="pack" {% if request.form.unit_type == 'pack' %}selected{% endif %}>Pack</option>
+                                <option value="carton" {% if request.form.unit_type == 'carton' %}selected{% endif %}>Carton</option>
+                                <option value="pcs" {% if request.form.unit_type == 'pcs' %}selected{% endif %}>Pieces</option>
+                                <!--<option value="box" {% if request.form.unit_type == 'box' %}selected{% endif %}>Box</option>
+                                <option value="bottle" {% if request.form.unit_type == 'bottle' %}selected{% endif %}>Bottle</option>
+                                <option value="can" {% if request.form.unit_type == 'can' %}selected{% endif %}>Can</option>-->
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a unit type.
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="quantity_per_unit" class="form-label">Quantity per Unit *</label>
+                            <input type="number" class="form-control" id="quantity_per_unit" name="quantity_per_unit"
+                                   value="{{ request.form.quantity_per_unit }}" min="1" required>
+                            <div class="invalid-feedback">
+                                Please provide quantity per unit (minimum 1).
+                            </div>
+                            <div class="form-text">How many pieces are in each unit (e.g., 12 pieces per pack)</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="quantity_units" class="form-label">Number of Units *</label>
+                            <input type="number" class="form-control" id="quantity_units" name="quantity_units"
+                                   value="{{ request.form.quantity_units }}" min="1" required>
+                            <div class="invalid-feedback">
+                                Please provide number of units (minimum 1).
+                            </div>
+                            <div class="form-text">How many units you're adding to inventory</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cost_per_unit" class="form-label">Cost per Unit *</label>
+                            <div class="input-group">
+                                <span class="input-group-text"> ₦</span>
+                                <input type="number" class="form-control" id="cost_per_unit" name="cost_per_unit"
+                                       value="{{ request.form.cost_per_unit }}" step="0.01" min="0" required>
+                                <div class="invalid-feedback">
+                                    Please provide cost per unit.
+                                </div>
+                            </div>
+                            <div class="form-text">Purchase price for each unit</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="sell_price_per_pcs" class="form-label">Sell Price per Piece *</label>
+                            <div class="input-group">
+                                <span class="input-group-text"> ₦</span>
+                                <input type="number" class="form-control" id="sell_price_per_pcs" name="sell_price_per_pcs"
+                                       value="{{ request.form.sell_price_per_pcs }}" step="0.01" min="0" required>
+                                <div class="invalid-feedback">
+                                    Please provide sell price per piece.
+                                </div>
+                            </div>
+                            <div class="form-text">Selling price for each individual piece</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div id="price-calculation" class="alert alert-info" style="display: none;">
+                                <strong>Price Calculation:</strong><br>
+                                Cost per piece: ₦<span id="cost-per-pcs">0.00</span><br>
+                                Total pieces: <span id="total-pieces">0</span><br>
+                                Total cost: ₦<span id="total-cost">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('products.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Products
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Add Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Real-time price calculation
+function calculatePrices() {
+    const costPerUnit = parseFloat(document.getElementById('cost_per_unit').value) || 0;
+    const quantityPerUnit = parseInt(document.getElementById('quantity_per_unit').value) || 1;
+    const quantityUnits = parseInt(document.getElementById('quantity_units').value) || 1;
+
+    const costPerPcs = costPerUnit / quantityPerUnit;
+    const totalPieces = quantityUnits * quantityPerUnit;
+    const totalCost = costPerUnit * quantityUnits;
+
+    document.getElementById('cost-per-pcs').textContent = costPerPcs.toLocaleString('en-NG');
+    document.getElementById('total-pieces').textContent = totalPieces;
+    document.getElementById('total-cost').textContent = totalCost.toLocaleString('en-NG');
+    document.getElementById('price-calculation').style.display = 'block';
+}
+
+// Add event listeners
+document.getElementById('cost_per_unit').addEventListener('input', calculatePrices);
+document.getElementById('quantity_per_unit').addEventListener('input', calculatePrices);
+document.getElementById('quantity_units').addEventListener('input', calculatePrices);
+
+// Form validation
+(function () {
+    'use strict'
+    const forms = document.querySelectorAll('form')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}

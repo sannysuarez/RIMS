@@ -1,0 +1,102 @@
+<!-- Shop Selection Template -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Selection - Inventory Management System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .shop-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border: none;
+            overflow: hidden;
+        }
+        .shop-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .shop-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .shop-card.shop-ceramics {
+            border-left: 5px solid #0066cc;
+        }
+        .shop-card.shop-itobe {
+            border-left: 5px solid #28a745;
+        }
+        .welcome-text {
+            color: white;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .welcome-text h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+        .welcome-text p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="welcome-text">
+            <h1>🏪 Welcome to Inventory Management</h1>
+            <p>Please select your shop to continue</p>
+        </div>
+
+        <div class="row justify-content-center g-4">
+            <div class="col-md-5">
+                <div class="shop-card shop-ceramics p-4 text-center h-100" onclick="selectShop('ceramics')">
+                    <div class="shop-icon">🏺</div>
+                    <h3 class="text-primary mb-3">Shop Ceramics</h3>
+                    <p class="text-muted mb-4">Ceramic products inventory management system</p>
+                    <div class="badge bg-primary fs-6 p-2">Main Shop</div>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="shop-card shop-itobe p-4 text-center h-100" onclick="selectShop('itobe')">
+                    <div class="shop-icon">🏪</div>
+                    <h3 class="text-success mb-3">Shop Itobe</h3>
+                    <p class="text-muted mb-4">General store inventory management system</p>
+                    <div class="badge bg-success fs-6 p-2">Branch Shop</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <small class="text-white-50">© 2026 Inventory Management System</small>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function selectShop(shopType) {
+            // Store shop selection in sessionStorage
+            sessionStorage.setItem('selectedShop', shopType);
+
+            // Redirect to login page
+            window.location.href = '/auth/login';
+        }
+    </script>
+</body>
+</html>

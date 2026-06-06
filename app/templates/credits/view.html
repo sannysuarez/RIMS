@@ -1,0 +1,91 @@
+<!-- View Credit -->
+{% extends "base.html" %}
+
+{% block title %}Credit #{{ credit.id }} - Raasu{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> Credit Account</h5>
+                    <small class="text-muted">Customer: {{ credit.customer_name }}</small>
+                </div>
+                <div>
+                    <a href="{{ url_for('credits.add_payback', credit_id=credit.id) }}" class="btn btn-success btn-sm me-2 {% if credit.status == 'settled' %}disabled{% endif %}">
+                        <i class="bi bi-cash-stack"></i> Add Payback
+                    </a>
+                    <a href="{{ url_for('credits.index_credits') }}" class="btn btn-secondary btn-sm">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row gy-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <h6>Total Credit</h6>
+                            <p class="fs-4">{{ format_currency(credit.total_credit) }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <h6>Paid Amount</h6>
+                            <p class="fs-4">{{ format_currency(credit.paid_amount) }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 h-100">
+                            <h6>Remaining Balance</h6>
+                            <p class="fs-4 text-danger">{{ format_currency(credit.remaining_balance) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <p><strong>Contact:</strong> {{ credit.customer_contact or 'N/A' }}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-{{ 'success' if credit.status == 'settled' else 'warning' }}">{{ credit.status.title() }}</span></p>
+                    <p><strong>Created:</strong> {{ credit.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Transaction History</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if debts %}
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for debt in debts %}
+                                    <tr>
+                                        <td>{{ debt.transaction_date.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ debt.transaction_type.title() }}</td>
+                                        <td>{{ debt.description or '-' }}</td>
+                                        <td>{{ format_currency(debt.amount) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="p-4 text-center text-muted">
+                            No transactions recorded for this credit.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

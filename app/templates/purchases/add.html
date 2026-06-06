@@ -1,0 +1,293 @@
+<!-- Add Purchase -->
+{% extends "base.html" %}
+
+{% block title %}Add Purchase - Raasu{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-cart-plus"></i> Add New Purchase</h5>
+            </div>
+            <div class="card-body">
+                <form id="purchaseForm" method="POST" novalidate>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="purchase_date" class="form-label">Purchase Date *</label>
+                            <input type="date" class="form-control" id="purchase_date" name="purchase_date"
+                                   value="{{ request.form.purchase_date or (datetime.now().strftime('%Y-%m-%d')) }}" required>
+                            <div class="invalid-feedback">
+                                Please select a purchase date.
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"
+                                      placeholder="Optional notes about this purchase">{{ request.form.notes }}</textarea>
+                        </div>
+                    </div>
+
+                    <h6 class="mb-3">Purchase Items</h6>
+                    <div id="itemsContainer">
+                        <div class="item-row border rounded p-3 mb-3">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Product *</label>
+                                    <input type="search" class="form-control mb-2 product-search" placeholder="Search product..." aria-label="Search product">
+                                    <select class="form-select product-select" name="product_id[]" required>
+                                        <option value="">Select Product</option>
+                                        {% for product in products %}
+                                        <option value="{{ product.id }}" data-unit-type="{{ product.unit_type }}"
+                                                data-quantity-per-unit="{{ product.quantity_per_unit }}">
+                                            {{ product.name }} ({{ product.unit_type }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Units *</label>
+                                    <input type="number" class="form-control quantity-units" name="quantity_units[]"
+                                           min="1" placeholder="0" required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Cost per Unit *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₦</span>
+                                        <input type="number" class="form-control cost-per-unit" name="cost_per_unit[]"
+                                               step="0.01" min="0" placeholder="0.00" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Total</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₦</span>
+                                        <input type="text" class="form-control item-total" readonly value="₦0.00">
+                                    </div>
+                                </div>
+                                <div class="col-md-1 mb-3 d-flex align-items-end">
+                                    <button type="button" class="btn btn-outline-danger remove-item" disabled>
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <small class="text-muted item-info"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <button type="button" id="addItemBtn" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle"></i> Add Another Item
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Purchase Summary</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Total Items:</strong> <span id="totalItems">0</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Total Amount:</strong> <span id="grandTotal">₦0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('purchases.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Purchases
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Save Purchase
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Template for new item rows
+const itemTemplate = `
+<div class="item-row border rounded p-3 mb-3">
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label class="form-label">Product *</label>
+            <input type="search" class="form-control mb-2 product-search" placeholder="Search product..." aria-label="Search product">
+            <select class="form-select product-select" name="product_id[]" required>
+                <option value="">Select Product</option>
+                {% for product in products %}
+                <option value="{{ product.id }}" data-unit-type="{{ product.unit_type }}"
+                        data-quantity-per-unit="{{ product.quantity_per_unit }}">
+                    {{ product.name }} ({{ product.unit_type }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2 mb-3">
+            <label class="form-label">Units *</label>
+            <input type="number" class="form-control quantity-units" name="quantity_units[]"
+                   min="1" placeholder="0" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Cost per Unit *</label>
+            <div class="input-group">
+                <span class="input-group-text">₦</span>
+                <input type="number" class="form-control cost-per-unit" name="cost_per_unit[]"
+                       step="0.01" min="0" placeholder="0.00" required>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <label class="form-label">Total</label>
+            <div class="input-group">
+                <span class="input-group-text">₦</span>
+                <input type="text" class="form-control item-total" readonly value="₦0.00">
+            </div>
+        </div>
+        <div class="col-md-1 mb-3 d-flex align-items-end">
+            <button type="button" class="btn btn-outline-danger remove-item">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <small class="text-muted item-info"></small>
+        </div>
+    </div>
+</div>
+`;
+
+let itemCount = 1;
+
+document.getElementById('addItemBtn').addEventListener('click', function() {
+    const container = document.getElementById('itemsContainer');
+    container.insertAdjacentHTML('beforeend', itemTemplate);
+    itemCount++;
+    updateRemoveButtons();
+    attachEventListeners();
+});
+
+function updateRemoveButtons() {
+    const removeButtons = document.querySelectorAll('.remove-item');
+    removeButtons.forEach(btn => {
+        btn.disabled = itemCount <= 1;
+    });
+}
+
+function attachEventListeners() {
+    // Product selection change
+    document.querySelectorAll('.product-select').forEach(select => {
+        select.addEventListener('change', function() {
+            updateItemInfo(this);
+        });
+    });
+
+    // Product search filtering
+    document.querySelectorAll('.product-search').forEach(input => {
+        input.addEventListener('input', function() {
+            filterProductOptions(this);
+        });
+    });
+
+    // Quantity and cost change
+    document.querySelectorAll('.quantity-units, .cost-per-unit').forEach(input => {
+        input.addEventListener('input', function() {
+            calculateItemTotal(this.closest('.item-row'));
+            calculateGrandTotal();
+        });
+    });
+
+    // Remove item
+    document.querySelectorAll('.remove-item').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (itemCount > 1) {
+                this.closest('.item-row').remove();
+                itemCount--;
+                updateRemoveButtons();
+                calculateGrandTotal();
+            }
+        });
+    });
+}
+
+function updateItemInfo(select) {
+    const option = select.options[select.selectedIndex];
+    const unitType = option.getAttribute('data-unit-type');
+    const quantityPerUnit = option.getAttribute('data-quantity-per-unit');
+    const infoDiv = select.closest('.item-row').querySelector('.item-info');
+
+    if (unitType && quantityPerUnit) {
+        infoDiv.textContent = `Unit: ${unitType} (${quantityPerUnit} pieces per unit)`;
+    } else {
+        infoDiv.textContent = '';
+    }
+}
+
+function filterProductOptions(searchInput) {
+    const term = searchInput.value.toLowerCase();
+    const select = searchInput.closest('.item-row').querySelector('.product-select');
+
+    Array.from(select.options).forEach(option => {
+        if (!option.value) {
+            option.hidden = false;
+            return;
+        }
+        const label = option.textContent.toLowerCase();
+        option.hidden = term && !label.includes(term);
+    });
+}
+
+function calculateItemTotal(itemRow) {
+    const quantity = parseFloat(itemRow.querySelector('.quantity-units').value) || 0;
+    const cost = parseFloat(itemRow.querySelector('.cost-per-unit').value) || 0;
+    const total = quantity * cost;
+    itemRow.querySelector('.item-total').value = `₦${total.toLocaleString('en-NG')}`;
+}
+
+function calculateGrandTotal() {
+    let totalItems = 0;
+    let grandTotal = 0;
+
+    document.querySelectorAll('.item-row').forEach(row => {
+        const quantity = parseFloat(row.querySelector('.quantity-units').value) || 0;
+        const cost = parseFloat(row.querySelector('.cost-per-unit').value) || 0;
+        totalItems += quantity;
+        grandTotal += quantity * cost;
+    });
+
+    document.getElementById('totalItems').textContent = totalItems;
+    document.getElementById('grandTotal').textContent = `₦${grandTotal.toLocaleString('en-NG')}`;
+}
+
+// Initialize event listeners
+attachEventListeners();
+updateRemoveButtons();
+
+// Form validation
+(function () {
+    'use strict'
+    const forms = document.querySelectorAll('form')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}

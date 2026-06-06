@@ -1,0 +1,41 @@
+<!-- View Expense -->
+{% extends "base.html" %}
+
+{% block title %}Expense #{{ expense.id }} - Raasu{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Expense Details</h5>
+                    <small class="text-muted">Recorded on {{ expense.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                </div>
+                <a href="{{ url_for('expenses.index') }}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> Back to Expenses
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row gy-3">
+                    <div class="col-md-6">
+                        <h6>Beneficiary</h6>
+                        <p class="mb-1"><strong>Name:</strong> {{ expense.beneficiary_name }}</p>
+                        <p class="mb-0"><strong>Address:</strong> {{ expense.beneficiary_address or 'N/A' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Expense Info</h6>
+                        <p class="mb-1"><strong>Date:</strong> {{ expense.expense_date.strftime('%Y-%m-%d') }}</p>
+                        <p class="mb-0"><strong>Amount:</strong> <span class="text-danger">{{ format_currency(expense.amount) }}</span></p>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h6>Description</h6>
+                    <p class="text-muted">{{ expense.description or 'No description provided.' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

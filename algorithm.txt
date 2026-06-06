@@ -1,0 +1,135 @@
+
+//////////////////////////////////// MAIN URL /////////////////////////////////////////////
+* Main site dir
+- select shop at first (shop Itobe or Shop Ceramics)
+- then Login
+///////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////// NAVIGATIONS (shop Ceramics) //////////////////////////////////////////
+* Dashboard
+- display charts:
+- Bar chart: monthly  Total_Liquidity, estimated profit. (Total_Liquidity=summation of purchase price of all 
+  remaining products in stock + total cash input + remaining credits - remaining debts - exp/withd . 
+  excluding ruf-yog section, misc section). this is the main
+- pie chart: debt,  top 5 Highest debtors, name and  amount
+- bar  chart: top 10 highest sales product(with thier sales number indicated. 
+  sales = total_purchased n instocks - remnants)
+- Any chart: view highest sales by category
+- bar chart: Ruf-Yog corner:- monthly sales (with sales number written on)
+
+* Add New product (if a product does not exit in the inventory)
+- Enter product name (with lookup to avoid duplicacy)
+- select (pack/carton or pcs)
+- int (enter quantity in pack/carton). this should be fixed (const) throughout after insertion
+- int (enter number of pack/carton or pcs ) bought
+- Enter price amount (currency(for the product(s)))
+- select (category: soft drinks, energy drinks, cookies, candies, toiletries, yoghurt drinks, waters etc.)
+- upload invoice (one or multiples (oppack/carton or pcstional))
+- view only (display the product amount per carton/pack: from the input =(Amount / pack/carton))
+- view only (display the product amount per pcs by calculating: = carton/pack_price / quanity)
+- int (enter the sell price, must be above price per pcs)
+- view only (display the total pieces bought based on the quantity, e.g if  2 pack/carton is bought and the quanity 
+   in each is 12, then quantity*pack/carton which is equal to 12*2)
+- view only (variable: total amount = amount * carton/pack or pcs) bought  
+- timestamp (more accurate timestamp to avoid system time being not correct)
+- save/done button
+- confirmation/review pop-up to avoid mistakes
+- repeat the same for each product
+
+* purchases
+- select from existing product to add 
+- if New (take back to (Add New product))
+- if product exist, then:
+- select pack/carton or pcs 
+- enter number of pack/carton or pcs bought
+- enter amount per pack/carton or pcs bought (because prices of commodities fluctuate, otherwise,
+ old prices would've been use)
+- select category.
+- display (price per pcs after pack/carton_price / quantity)
+- enter sell price
+- upload invoice(s)
+- save/done button
+- confirmation/review pop-up to avoid mistakes
+- repeat the same for each product
+
+* Ruf-Yog Corner
+- this should be in 2-like section. 1. this, 2.products (view)
+- This is also a collection products on their own
+- Add new
+- Purchase( select to add to an exisitng product )
+- enter qunatity bought
+- enter amount bought 
+- enter sell price (must be higher than unit price)
+- display/save: price per unit (amount / quantity)
+- save/done button
+- confirmation
+- products: displa(unique ID, name, unit, price, sell price, and (edit, delete) on if is_admin with confirmaton)
+
+
+* MISC
+- this Shares the same Logic with 'Add New Product' & 'Purchases'
+- this is seperate beacuse the items werent suppose to be in the main shop items
+- be abe to:
+- Add new product if product_name doesnt exist 
+- Purchases: select from existing product to add if not new
+- Enter quantity
+- enter sales price
+- display/save total amount(sales_price * quantity)
+- save/done button
+- confirmation
+- repeat for every product
+
+
+* Products
+- Display (number of total products)
+- unique iD for each
+- lookup/search bar (by: name, unique ID,  or category)
+- sort (by: asc/desc, highest/lowest price per carton/pack, highest/lowest purchased based on pcs count, category etc ). by default is stack format.
+- button on each product(view,delete (delete only if is_admin (with confirmation)) )
+- view button (more detailed: product name, quantity, carton/pack price, pcs price(cal from carton/pack / quanity), sell price, (sell price editable only if is_admin (with confirmation)))
+
+* Expenses/Withdrawals
+- Enter name of beneficiary. str(i.e. beneficiary Name/Shop Name or address)
+- Enter Amount. currency(Naira:)
+- save/Done button
+- Repeat the same for each entry.
+
+* Credits/Debts
+- this should be in 3-like form
+- 1. credits: what an individual owe the Shop
+- 2. payback: when person payback in full or part
+- 3. Debts: What the shop owe
+- for credits: Enter name, ennter list of item(s) collected, price. could only cash collected or something similar
+- Comments
+- Save/done button.
+- repeat for every credits entry.
+- for payback: select the person from the credits lists and enter amount to be payback
+- for Debts: Enter the reason (comments), from is collected from (str), price
+- Save/Done button.
+- Repeat for every Debts entry
+- pay logic should be the same with payback: above
+
+* MDC - Monthly Data collection (only if is_admin)
+- for all Products (display: product name, input(int(left_over)), save button.) the left_overs were usually collected
+ in pcs 
+- Input (currency(Total cash balance)). this is after all Data collection is left_over
+
+* Analysis
+- sort (by: highest/lowest sales, highest/lowest est_profit,)
+- for each product, display:
+- product name, 
+- sales, (sales = int(total_purchased - left_overs) ) in pcs
+- estimated profit, (est_profit = sell_price * sales) 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////// NAVIGATIONS (Shop Itobe) //////////////////////////////////////////////////////
+- THE SAME AS SHOP CERAMICS
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////// SOME ADMIN FEATURES ///////////////////////////////////////////////////////////////////////
+- Same login details for both shops. user n password details should be in .env (created when development:  user: Ibrahim,
+  password: randon Alphanumeric. user2: Sanni, password: Alphanumeric. display as: Admin Ibrahim & Admin Sanni)
+- Admin: create users, add users, delete users & suspend users.
+- can create users including their username and passwords
+- see all users histories/activities. i.e login timestamp etc.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

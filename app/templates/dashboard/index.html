@@ -1,0 +1,224 @@
+<!-- Dashboard Template -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Shop Ceramics{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="row">
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                 Total Liquidity
+            </div>
+            <div class="card-body text-center">
+                <h2 class="text-primary">{{ format_currency(analytics.total_liquidity) }}</h2>
+                <small class="text-muted">Current financial position</small>
+                {% if analytics.last_mdc_date %}
+                <div class="mt-2"><small class="text-muted">As of last MDC: {{ analytics.last_mdc_date.strftime('%b %d, %Y %I:%M %p') }}</small></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                 Estimated Profit
+            </div>
+            <div class="card-body text-center">
+                <h2 class="text-primary">{{ format_currency(analytics.total_profit) }}</h2>
+                <small class="text-muted">From sold products</small>
+                {% if analytics.last_mdc_date %}
+                <div class="mt-2"><small class="text-muted">Updated as of last MDC: {{ analytics.last_mdc_date.strftime('%b %d, %Y %I:%M %p') }}</small></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                 Breakdown
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <div class="text-center">
+                            <h5 class="text-primary">{{ format_currency(analytics.liquidity_breakdown['product_value']) }}</h5>
+                            <small class="text-muted">Stocks Value</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center">
+                            <h5 style="color: green;">{{ format_currency(analytics.liquidity_breakdown['total_purchases']) }}</h5>
+                            <small class="text-muted">Cash Input</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center">
+                            <h5 style="color: red;">-{{ format_currency(analytics.liquidity_breakdown['total_expenses']) }}</h5>
+                            <small class="text-muted">Expenses/Withdrawals</small>
+                            {% if analytics.last_mdc_date %}
+                            <div><small class="text-muted">since {{ analytics.last_mdc_date.strftime('%b %d, %Y %I:%M %p') }}</small></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center">
+                            <h5 style="color: orange;">-{{ format_currency(analytics.liquidity_breakdown['total_debts']) }}</h5>
+                            <small class="text-muted">Outstanding Debts</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                 Top 5 Debtors
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Customer Name</th>
+                            <th>Remaining Balance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for debtor in analytics.top_5_debtors %}
+                        <tr>
+                            <td>{{ debtor.customer_name }}</td>
+                            <td>{{ format_currency(debtor.remaining_balance) }}</td>
+                            <td><span class="badge badge-danger">{{ debtor.status|upper }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center">No debtors</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                 Top 10 Best-Selling Products
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Sold Quantity (pcs)</th>
+                            <th>Sell Price/pcs</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in analytics.top_products %}
+                        <tr>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.category }}</td>
+                            <td>{{ product.sold_quantity_pcs }}</td>
+                            <td>{{ format_currency(product.sell_price_per_pcs) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center">No products sold yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                 Sales by Category
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Quantity Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in analytics.category_sales %}
+                        <tr>
+                            <td>{{ category.category }}</td>
+                            <td>{{ category.quantity }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center">No sales data</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                 Ruf-Yog Corner
+            </div>
+            <div class="card-body text-center">
+                <h3 class="text-primary">{{ analytics.ruf_yog_sales }}</h3>
+                <small class="text-muted">Items sold this month</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                 Monthly Purchase & Expense Trends (Last 12 Months)
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Purchase Amount</th>
+                            <th>Expense Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month in analytics.monthly_data %}
+                        <tr>
+                            <td>{{ month.month }}</td>
+                            <td>{{ format_currency(month.purchases) }}</td>
+                            <td>{{ format_currency(month.expenses) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

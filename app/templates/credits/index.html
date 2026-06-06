@@ -1,0 +1,106 @@
+<!-- Credits Management -->
+{% extends "base.html" %}
+
+{% block title %}Credits - Raasu{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="bi bi-wallet2"></i> Customer Credits</h1>
+                <p class="mb-0 text-muted">Track customer credit accounts and outstanding balances.</p>
+            </div>
+            <a href="{{ url_for('credits.add_credit') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Credit
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                {% if credits.items %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Customer</th>
+                                <th>Contact</th>
+                                <th>Total Credit</th>
+                                <th>Paid</th>
+                                <th>Remaining</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for credit in credits.items %}
+                            <tr>
+                                <td>{{ credit.id }}</td>
+                                <td>{{ credit.customer_name }}</td>
+                                <td>{{ credit.customer_contact or '-' }}</td>
+                                <td>{{ format_currency(credit.total_credit) }}</td>
+                                <td>{{ format_currency(credit.paid_amount) }}</td>
+                                <td>{{ format_currency(credit.remaining_balance) }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if credit.status == 'settled' else 'warning' }}">
+                                        {{ credit.status.title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('credits.view_credit', credit_id=credit.id) }}" class="btn btn-sm btn-outline-info me-1" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if credit.status != 'settled' %}
+                                    <a href="{{ url_for('credits.add_payback', credit_id=credit.id) }}" class="btn btn-sm btn-outline-success" title="Payback">
+                                        <i class="bi bi-cash-stack"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if credits.pages > 1 %}
+                <nav aria-label="Credits pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if credits.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('credits.index_credits', page=credits.prev_num) }}">Previous</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                        {% endif %}
+
+                        {% for page_num in credits.iter_pages() %}
+                        {% if page_num %}
+                        <li class="page-item {% if page_num == credits.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('credits.index_credits', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if credits.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('credits.index_credits', page=credits.next_num) }}">Next</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">Next</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No customer credits recorded yet. Start by adding a new credit.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

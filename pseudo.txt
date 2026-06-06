@@ -1,0 +1,425 @@
+"""Pseudocode for Shop Ceramics Inventory Management System
+
+## OVERVIEW
+A comprehensive inventory management system for ceramic shop with multi-section support,
+financial tracking, and detailed analytics. Designed for scalability with proper database
+normalization and business logic separation.
+
+================================================================================
+## SYSTEM ARCHITECTURE
+================================================================================
+
+DATABASE LAYER:
+===============
+1. User Management (Authentication & Authorization)
+   - Store username, email, password_hash, is_admin, is_active
+   - Implement role-based access control (RBAC)
+
+2. Product Management (Main Inventory)
+   - Store: unique_id, name, category, unit_type, quantity_per_unit
+   - Pricing: cost_per_unit, cost_per_pcs, sell_price_per_pcs
+   - Stock: total_quantity_units, remaining_quantity_units, remaining_quantity_pcs, sold_quantity_pcs
+   - Track: created_at, updated_at, invoice_path
+
+3. Purchase Transactions
+   - Store: purchase_date, total_amount, invoice_path
+   - Items: product_id, quantity_units, quantity_pcs, cost_per_unit, item_total
+   - Support: Date and time verification
+
+4. Expenses/Withdrawals
+   - Store: beneficiary_name, beneficiary_address, amount, description, expense_date
+
+5. Credits/Debts Management
+   - Customer: name, contact, total_credit, paid_amount, remaining_balance, status
+   - Transactions: credit_id, transaction_type (credit/payback), amount, date
+
+6. Ruf-Yog Corner (Special Section)
+   - Store: unique_id, name, unit_type, cost_per_unit, sell_price_per_unit
+   - Track: total_quantity, remaining_quantity, sold_quantity
+   - Admin Control: edit/delete restricted to admin with confirmation
+
+7. Miscellaneous Items (Separate Inventory)
+   - Store: unique_id, name, cost_per_unit, sell_price_per_unit
+   - Track: total_quantity, remaining_quantity, sold_quantity
+
+================================================================================
+## BUSINESS LOGIC FLOW
+================================================================================
+
+### LOGIN & AUTHENTICATION
+PSEUDOCODE login_user(username, password):
+    user = query User where username == input
+    IF user NOT NULL:
+        IF hash(password) == user.password_hash:
+            set session.user_id = user.id
+            return REDIRECT to dashboard
+        ELSE:
+            return ERROR "Invalid password"
+    ELSE:
+        return ERROR "User not found"
+
+### DASHBOARD ANALYTICS
+PSEUDOCODE calculate_dashboard_metrics():
+    
+    // 1. Total Liquidity Calculation
+    total_liquidity = 0
+    FOR EACH product IN all_products:
+        product_value = product.remaining_quantity_pcs * product.cost_per_pcs
+        total_liquidity += product_value
+    
+    // 2. Add cash components
+    total_cash_input = SUM(purchase.total_amount) FROM all_purchases
+    total_expenses = SUM(expense.amount) FROM all_expenses
+    total_remaining_credits = SUM(credit.remaining_balance) WHERE remaining_balance > 0
+    total_debts = SUM(debt.amount) WHERE transaction_type == 'credit'
+    
+    // Final liquidity formula
+    final_liquidity = total_liquidity + total_cash_input - total_expenses - total_remaining_credits - total_debts
+    RETURN final_liquidity
+    
+    // 3. Top 5 Debtors
+    debtors = QUERY credits ORDER BY remaining_balance DESC LIMIT 5
+    RETURN debtors with (name, amount, percentage_of_total)
+    
+    // 4. Top 10 Best Selling Products
+    products = QUERY products ORDER BY sold_quantity_pcs DESC LIMIT 10
+    RETURN products with (name, quantity_sold, percentage_of_category)
+    
+    // 5. Sales by Category
+    FOR EACH category IN all_categories:
+        category_sales = SUM(product.sold_quantity_pcs) WHERE product.category_id == category.id
+        APPEND {category_name, total_sales} to results
+    RETURN results
+    
+    // 6. Ruf-Yog Monthly Sales
+    ruf_yog_sales = SUM(purchase.quantity) FROM ruf_yog_purchases 
+                    WHERE month(purchase_date) == current_month
+    RETURN ruf_yog_sales
+
+### ADD NEW PRODUCT (MAIN INVENTORY)
+PSEUDOCODE add_new_product(product_data):
+    
+    // Validation
+    IF product_exists(product_name):
+        return ERROR "Product already exists"
+    
+    // Create unique ID
+    unique_id = generate_UUID()[:8]
+    
+    // Calculate derived values
+    quantity_per_unit = product_data.quantity_per_unit  // CONSTANT after creation
+    quantity_units = product_data.quantity_units
+    cost_per_unit = product_data.cost_per_unit
+    cost_per_pcs = cost_per_unit / quantity_per_unit
+    sell_price_per_pcs = product_data.sell_price_per_pcs
+    
+    total_quantity_pcs = quantity_units * quantity_per_unit
+    
+    // Validate sell price > cost price
+    IF sell_price_per_pcs <= cost_per_pcs:
+        return ERROR "Sell price must be greater than cost price"
+    
+    // Create product record
+    product = CREATE Product(
+        unique_id = unique_id,
+        name = product_data.name,
+        category_id = product_data.category_id,
+        unit_type = product_data.unit_type,
+        quantity_per_unit = quantity_per_unit,
+        cost_per_unit = cost_per_unit,
+        cost_per_pcs = cost_per_pcs,
+        sell_price_per_pcs = sell_price_per_pcs,
+        total_quantity_units = quantity_units,
+        total_quantity_pcs = total_quantity_pcs,
+        remaining_quantity_units = quantity_units,
+        remaining_quantity_pcs = total_quantity_pcs
+    )
+    SAVE product to database
+    
+    // Create confirmation popup
+    SHOW confirmation_popup with product details
+    RETURN success
+
+### PURCHASE TRANSACTION (Add to existing product)
+PSEUDOCODE add_purchase(purchase_data):
+    
+    product = QUERY Product where id == purchase_data.product_id
+    IF product NULL:
+        return ERROR "Product not found"
+    
+    quantity_units = purchase_data.quantity_units
+    quantity_pcs = quantity_units * product.quantity_per_unit
+    cost_per_unit = purchase_data.cost_per_unit
+    item_total = quantity_units * cost_per_unit
+    
+    sell_price_per_pcs = purchase_data.sell_price_per_pcs
+    IF sell_price_per_pcs <= (cost_per_unit / product.quantity_per_unit):
+        return ERROR "Sell price too low"
+    
+    // Create purchase transaction
+    purchase = CREATE Purchase(
+        purchase_date = purchase_data.purchase_date,
+        total_amount = item_total
+    )
+    SAVE purchase
+    
+    // Create purchase item
+    item = CREATE PurchaseItem(
+        purchase_id = purchase.id,
+        product_id = product.id,
+        quantity_units = quantity_units,
+        quantity_pcs = quantity_pcs,
+        cost_per_unit = cost_per_unit,
+        item_total = item_total
+    )
+    SAVE item
+    
+    // Update product inventory
+    product.total_quantity_units += quantity_units
+    product.total_quantity_pcs += quantity_pcs
+    product.remaining_quantity_units += quantity_units
+    product.remaining_quantity_pcs += quantity_pcs
+    product.cost_per_unit = cost_per_unit  // Update to latest price
+    product.cost_per_pcs = cost_per_unit / product.quantity_per_unit
+    UPDATE product
+    
+    SHOW confirmation_popup
+    RETURN success
+
+### RUF-YOG CORNER OPERATIONS
+PSEUDOCODE ruf_yog_operations():
+    
+    // Add New Ruf-Yog Product
+    PSEUDOCODE add_ruf_yog_product(data):
+        product = CREATE RufYogProduct(
+            unique_id = generate_UUID()[:8],
+            name = data.name,
+            unit_type = data.unit_type,
+            cost_per_unit = data.cost_per_unit,
+            sell_price_per_unit = data.sell_price_per_unit,
+            total_quantity = data.quantity,
+            remaining_quantity = data.quantity
+        )
+        SAVE product
+        RETURN success
+    
+    // Add Purchase to Ruf-Yog Product
+    PSEUDOCODE add_ruf_yog_purchase(data):
+        product = QUERY RufYogProduct where id == data.product_id
+        quantity = data.quantity
+        unit_price = data.unit_price
+        total_amount = quantity * unit_price
+        
+        purchase = CREATE RufYogPurchase(
+            product_id = product.id,
+            quantity = quantity,
+            unit_price = unit_price,
+            total_amount = total_amount
+        )
+        SAVE purchase
+        
+        // Update inventory
+        product.total_quantity += quantity
+        product.remaining_quantity += quantity
+        UPDATE product
+        RETURN success
+    
+    // Edit/Delete (Admin Only)
+    PSEUDOCODE edit_delete_ruf_yog(product_id, action, current_user):
+        IF NOT current_user.is_admin:
+            return ERROR "Unauthorized"
+        
+        SHOW confirmation_dialog
+        IF user_confirmed:
+            IF action == 'edit':
+                UPDATE product data
+            ELSE IF action == 'delete':
+                DELETE product and related transactions
+            RETURN success
+        RETURN cancelled
+
+### MISCELLANEOUS SECTION
+PSEUDOCODE misc_operations():
+    // Similar to Ruf-Yog but simpler structure
+    PSEUDOCODE add_misc_product(data):
+        product = CREATE MiscProduct(
+            unique_id = generate_UUID()[:8],
+            name = data.name,
+            cost_per_unit = data.cost_per_unit,
+            sell_price_per_unit = data.sell_price_per_unit,
+            total_quantity = data.quantity,
+            remaining_quantity = data.quantity
+        )
+        SAVE product
+        RETURN success
+    
+    PSEUDOCODE add_misc_purchase(data):
+        product = QUERY MiscProduct where id == data.product_id
+        quantity = data.quantity
+        cost_per_unit = data.cost_per_unit
+        total_amount = quantity * cost_per_unit
+        
+        purchase = CREATE MiscPurchase(
+            product_id = product.id,
+            quantity = quantity,
+            cost_per_unit = cost_per_unit,
+            total_amount = total_amount
+        )
+        SAVE purchase
+        
+        product.total_quantity += quantity
+        product.remaining_quantity += quantity
+        UPDATE product
+        RETURN success
+
+### EXPENSES/WITHDRAWALS TRACKING
+PSEUDOCODE add_expense(beneficiary_data):
+    
+    expense = CREATE Expense(
+        beneficiary_name = beneficiary_data.beneficiary_name,
+        beneficiary_address = beneficiary_data.address,
+        amount = beneficiary_data.amount,
+        description = beneficiary_data.description,
+        expense_date = beneficiary_data.expense_date
+    )
+    SAVE expense
+    RETURN success
+
+### CREDITS/DEBTS MANAGEMENT
+PSEUDOCODE manage_credits():
+    
+    // Add Customer Credit
+    PSEUDOCODE add_customer_credit(data):
+        customer_name = data.customer_name
+        total_credit = data.total_credit
+        
+        credit = CREATE Credit(
+            customer_name = customer_name,
+            customer_contact = data.contact,
+            total_credit = total_credit,
+            paid_amount = 0,
+            remaining_balance = total_credit,
+            status = 'active'
+        )
+        SAVE credit
+        
+        // Create initial debt transaction
+        debt = CREATE Debt(
+            credit_id = credit.id,
+            transaction_type = 'credit',
+            amount = total_credit
+        )
+        SAVE debt
+        RETURN success
+    
+    // Record Payback (Full or Partial)
+    PSEUDOCODE add_payback(credit_id, amount):
+        credit = QUERY Credit where id == credit_id
+        
+        IF amount > credit.remaining_balance:
+            return ERROR "Amount exceeds remaining balance"
+        
+        debt = CREATE Debt(
+            credit_id = credit_id,
+            transaction_type = 'payback',
+            amount = amount
+        )
+        SAVE debt
+        
+        credit.paid_amount += amount
+        credit.remaining_balance -= amount
+        
+        IF credit.remaining_balance == 0:
+            credit.status = 'settled'
+        
+        UPDATE credit
+        RETURN success
+
+### PRODUCT SEARCH & FILTERING
+PSEUDOCODE search_products(search_params):
+    
+    query = SELECT * FROM products
+    
+    // Text search
+    IF search_params.search_text:
+        query.WHERE (name LIKE '%{search_text}%' OR unique_id LIKE '%{search_text}%')
+    
+    // Category filter
+    IF search_params.category_id:
+        query.WHERE category_id == search_params.category_id
+    
+    // Apply sorting
+    SWITCH search_params.sort_by:
+        CASE 'price_asc':
+            query.ORDER_BY cost_per_pcs ASC
+        CASE 'price_desc':
+            query.ORDER_BY cost_per_pcs DESC
+        CASE 'quantity_asc':
+            query.ORDER_BY remaining_quantity_pcs ASC
+        CASE 'quantity_desc':
+            query.ORDER_BY remaining_quantity_pcs DESC
+        DEFAULT:
+            query.ORDER_BY created_at DESC
+    
+    // Pagination
+    results = query.PAGINATE(page, per_page=20)
+    RETURN results
+
+### ADMIN PERMISSIONS
+PSEUDOCODE check_admin_action(current_user, action):
+    
+    IF NOT current_user.is_authenticated:
+        RETURN deny with redirect to login
+    
+    IF action IN ['delete_product', 'edit_ruf_yog', 'delete_ruf_yog', 'edit_sell_price']:
+        IF NOT current_user.is_admin:
+            RETURN deny with ERROR "Unauthorized"
+    
+    RETURN allow
+
+================================================================================
+## DATA CONSISTENCY & VALIDATION
+================================================================================
+
+VALIDATIONS:
+- Unique product names (per main inventory)
+- Unique customer names (per credits)
+- Sell price > Cost price (always enforced)
+- Positive quantities and amounts
+- Valid date/time stamps
+- Prevent duplicate purchases (timestamp uniqueness)
+
+CALCULATIONS:
+- cost_per_pcs = cost_per_unit / quantity_per_unit
+- total_pcs = quantity_units * quantity_per_unit
+- Remaining items auto-updated on sale
+- Balance updates cascade through credit system
+
+================================================================================
+## SCALABILITY CONSIDERATIONS
+================================================================================
+
+1. DATABASE INDEXING:
+   - Index on: user.username, product.name, product.unique_id, category.name
+   - Index on: credit.customer_name, expense.beneficiary_name
+   - Date indexes for efficient range queries
+
+2. PAGINATION:
+   - All list views paginated (20 items per page)
+   - Supports sorting in both directions
+
+3. QUERY OPTIMIZATION:
+   - Use lazy loading for related data
+   - Batch fetch for analytics calculations
+   - Cache dashboard metrics (update on change)
+
+4. FUTURE ENHANCEMENTS:
+   - Multi-shop support (add shop_id to all tables)
+   - Export to Excel/PDF reports
+   - Bulk import from csvOperations
+   - Real-time inventory alerts
+   - Multi-currency support
+   - Barcode generation and scanning
+   - API endpoints for mobile app
+   - Advanced forecasting (demand prediction)
+"""

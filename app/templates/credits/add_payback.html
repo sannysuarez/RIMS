@@ -1,0 +1,73 @@
+<!-- Add Payback -->
+{% extends "base.html" %}
+
+{% block title %}Add Payback - Raasu{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Record Payback</h5>
+                    <small class="text-muted">Customer: {{ credit.customer_name }}</small>
+                </div>
+                <a href="{{ url_for('credits.index_credits') }}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    Remaining balance: <strong>{{ format_currency(credit.remaining_balance) }}</strong>
+                    <br>
+                    Status: <span class="badge bg-{{ 'success' if credit.status == 'settled' else 'warning' }}">{{ credit.status.title() }}</span>
+                </div>
+                <form method="POST" novalidate>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="amount" class="form-label">Payment Amount (₦) *</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="amount" name="amount"
+                                   value="{{ amount or request.form.amount }}" required>
+                            <div class="invalid-feedback">Enter a valid payment amount.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="transaction_date" class="form-label">Payment Date *</label>
+                            <input type="date" class="form-control" id="transaction_date" name="transaction_date"
+                                   value="{{ transaction_date or request.form.transaction_date or datetime.now().strftime('%Y-%m-%d') }}" required>
+                            <div class="invalid-feedback">Select a payment date.</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"
+                                  placeholder="Optional note for this payment">{{ description or request.form.description }}</textarea>
+                    </div>
+
+                    <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Save Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    const forms = document.querySelectorAll('form');
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
+{% endblock %}
