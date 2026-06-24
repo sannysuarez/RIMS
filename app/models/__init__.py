@@ -5,11 +5,16 @@ from .purchase import Purchase, PurchaseItem
 from .expense import Expense
 from .credit import Credit, Debt
 from .misc import MiscProduct, MiscPurchase
-from .ruf_yog import RufYogProduct, RufYogPurchase
+from .ruf_yog import (
+    RufYogProduct, RufYogPurchase, RufYogMDCReport,
+    RufYogExpense, RufYogCredit, RufYogDebt
+)
 from .mdc import MDCReport
 
 __all__ = [
     'User', 'Product', 'Category', 'Purchase', 'PurchaseItem',
     'Expense', 'Credit', 'Debt', 'MiscProduct', 'MiscPurchase',
-    'RufYogProduct', 'RufYogPurchase', 'MDCReport'
+    'RufYogProduct', 'RufYogPurchase', 'RufYogMDCReport',
+    'RufYogExpense', 'RufYogCredit', 'RufYogDebt',
+    'MDCReport'
 ]

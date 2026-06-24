@@ -1,0 +1,98 @@
+<!-- Ruf-Yog Expenses List -->
+{% extends "base.html" %}
+
+{% block title %}Ruf-Yog Expenses{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="bi bi-cash-stack"></i> Ruf-Yog Expenses</h1>
+                <p class="mb-0 text-muted">Withdrawals and operational expenses</p>
+            </div>
+            <div>
+                <a href="{{ url_for('ruf_yog.add_expense') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add Expense
+                </a>
+                <a href="{{ url_for('ruf_yog.index') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                {% if expenses.items %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Date</th>
+                                <th>Beneficiary</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses.items %}
+                            <tr>
+                                <td>{{ expense.id }}</td>
+                                <td>{{ expense.expense_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ expense.beneficiary_name }}</td>
+                                <td>{{ expense.description[:50] if expense.description else '-' }}</td>
+                                <td>{{ format_currency(expense.amount) }}</td>
+                                <td>
+                                    <a href="{{ url_for('ruf_yog.view_expense', expense_id=expense.id) }}" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if expenses.pages > 1 %}
+                <nav aria-label="Expenses pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if expenses.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('ruf_yog.expenses', page=expenses.prev_num) }}">Previous</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                        {% endif %}
+
+                        {% for page_num in expenses.iter_pages() %}
+                        {% if page_num %}
+                        <li class="page-item {% if page_num == expenses.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('ruf_yog.expenses', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if expenses.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('ruf_yog.expenses', page=expenses.next_num) }}">Next</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">Next</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No expenses recorded yet. <a href="{{ url_for('ruf_yog.add_expense') }}">Add first expense</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+<!-- View Ruf-Yog Credit -->
+{% extends "base.html" %}
+
+{% block title %}Ruf-Yog Credit Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 offset-md-1">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1>{{ credit.customer_name }}</h1>
+                <p class="text-muted mb-0">{{ credit.customer_contact or 'No contact' }}</p>
+            </div>
+            <div>
+                {% if credit.status != 'settled' %}
+                <a href="{{ url_for('ruf_yog.add_payback', credit_id=credit.id) }}" class="btn btn-success me-2">
+                    <i class="bi bi-cash-stack"></i> Record Payment
+                </a>
+                {% endif %}
+                <a href="{{ url_for('ruf_yog.credits') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Total Credit</h6>
+                        <h3>{{ format_currency(credit.total_credit) }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Paid Amount</h6>
+                        <h3>{{ format_currency(credit.paid_amount) }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Remaining</h6>
+                        <h3>{{ format_currency(credit.remaining_balance) }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Status</h6>
+                        <span class="badge bg-{{ 'success' if credit.status == 'settled' else 'warning' }}">
+                            {{ credit.status.title() }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Transaction History</h5>
+            </div>
+            <div class="card-body">
+                {% if debts %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for debt in debts %}
+                            <tr>
+                                <td>{{ debt.transaction_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if debt.transaction_type == 'credit' else 'info' }}">
+                                        {{ debt.transaction_type.title() }}
+                                    </span>
+                                </td>
+                                <td>{{ format_currency(debt.amount) }}</td>
+                                <td>{{ debt.description or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">No transactions yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
