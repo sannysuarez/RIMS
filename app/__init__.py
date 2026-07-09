@@ -2,6 +2,7 @@
 from flask import Flask, redirect, url_for, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
+from sqlalchemy import inspect, text
 from config import config_by_name
 import os
 
@@ -33,6 +34,43 @@ def create_app(config_name=None):
     db.init_app(app)
     login_manager.init_app(app)
     
+    def ensure_mdc_product_record_columns():
+        """Ensure mdc_product_records table has the price columns (schema migration helper)"""
+        inspector = inspect(db.engine)
+        if 'mdc_product_records' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('mdc_product_records')]
+            if 'cost_per_pcs_at_record' not in columns:
+                db.session.execute(text('ALTER TABLE mdc_product_records ADD COLUMN cost_per_pcs_at_record NUMERIC(10, 2) DEFAULT 0'))
+                db.session.commit()
+            if 'sell_price_per_pcs_at_record' not in columns:
+                db.session.execute(text('ALTER TABLE mdc_product_records ADD COLUMN sell_price_per_pcs_at_record NUMERIC(10, 2) DEFAULT 0'))
+                db.session.commit()
+
+    def ensure_mdc_report_snapshot_columns():
+        """Ensure mdc_reports table has snapshot columns for immutability"""
+        inspector = inspect(db.engine)
+        if 'mdc_reports' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('mdc_reports')]
+            # Add numeric snapshot columns if missing
+            if 'product_value' not in columns:
+                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN product_value NUMERIC(12, 2) DEFAULT 0'))
+                db.session.commit()
+            if 'total_expenses' not in columns:
+                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN total_expenses NUMERIC(12, 2) DEFAULT 0'))
+                db.session.commit()
+            if 'total_debts' not in columns:
+                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN total_debts NUMERIC(12, 2) DEFAULT 0'))
+                db.session.commit()
+            if 'total_paybacks' not in columns:
+                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN total_paybacks NUMERIC(12, 2) DEFAULT 0'))
+                db.session.commit()
+            if 'total_liquidity' not in columns:
+                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN total_liquidity NUMERIC(12, 2) DEFAULT 0'))
+                db.session.commit()
+            if 'cycle_profit' not in columns:
+                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN cycle_profit NUMERIC(12, 2) DEFAULT 0'))
+                db.session.commit()
+
     # Create upload folder if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
@@ -70,6 +108,11 @@ def create_app(config_name=None):
 
             if db.session.new:
                 db.session.commit()
+        
+        # Ensure MDC product record schema is up to date
+        ensure_mdc_product_record_columns()
+        # Ensure MDC reports snapshot columns exist (for older databases)
+        ensure_mdc_report_snapshot_columns()
 
     from app.models.user import User
 

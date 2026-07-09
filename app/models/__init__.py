@@ -10,11 +10,12 @@ from .ruf_yog import (
     RufYogExpense, RufYogCredit, RufYogDebt
 )
 from .mdc import MDCReport
+from .mdc_product_record import MDCProductRecord
 
 __all__ = [
     'User', 'Product', 'Category', 'Purchase', 'PurchaseItem',
     'Expense', 'Credit', 'Debt', 'MiscProduct', 'MiscPurchase',
     'RufYogProduct', 'RufYogPurchase', 'RufYogMDCReport',
     'RufYogExpense', 'RufYogCredit', 'RufYogDebt',
-    'MDCReport'
+    'MDCReport', 'MDCProductRecord'
 ]

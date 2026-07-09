@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}MDC Reports{% endblock %}
+
+{% block content %}
+<h1>MDC Reports</h1>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="form-inline">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control" placeholder="Search by ID or date (e.g., Jul 01, 2026)" value="{{ search_query }}">
+                <div class="input-group-append">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">MDC Reports (Total: {{ pagination.total }})</div>
+    <div class="card-body">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Cash Input</th>
+                    <th>Recorded Products</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reports %}
+                <tr>
+                    <td>{{ r.id }}</td>
+                    <td>{{ r.report_date.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td>{{ format_currency(r.cash_input) }}</td>
+                    <td>{{ r.product_records|length }}</td>
+                    <td>
+                        <a href="{{ url_for('products.mdc') }}" class="btn btn-sm btn-outline-secondary">Open MDC Form</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center">No MDC reports found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                {% if pagination.has_prev %}
+                <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}&search={{ search_query }}">Prev</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} / {{ pagination.total_pages }}</span></li>
+                {% if pagination.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}&search={{ search_query }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+
+{% endblock %}

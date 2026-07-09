@@ -4,6 +4,10 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.product import Product, Category
 from app.models.mdc import MDCReport
+from app.models.mdc_product_record import MDCProductRecord
+from app.models.expense import Expense
+from app.models.credit import Credit, Debt
+from sqlalchemy import func
 from app.utils.helpers import (
     admin_required, format_currency, filter_products,
     paginate_items, validate_form_data, generate_unique_id,
@@ -106,14 +110,100 @@ def mdc():
                 flash(error, 'error')
             return redirect(url_for('products.mdc'))
 
+        # Create MDC report for this cycle
         mdc_report = MDCReport(cash_input=cash_input_value, report_date=datetime.now())
         db.session.add(mdc_report)
+        db.session.flush()  # Flush to get the ID without committing yet
+
+        # Create product records for this MDC cycle and update product quantities
+        product_value_sum = 0.0
+        cycle_profit_sum = 0.0
+        for product in products:
+            sold_quantity_pcs = max(product.total_quantity_pcs - product.remaining_quantity_pcs, 0)
+
+            # Record the sale in this MDC cycle with current prices (immutable snapshot)
+            product_record = MDCProductRecord(
+                mdc_report_id=mdc_report.id,
+                product_id=product.id,
+                sold_quantity_pcs=sold_quantity_pcs,
+                remaining_quantity_pcs=product.remaining_quantity_pcs,
+                cost_per_pcs_at_record=product.cost_per_pcs,
+                sell_price_per_pcs_at_record=product.sell_price_per_pcs,
+                recorded_at=datetime.now()
+            )
+            db.session.add(product_record)
+
+            # Accumulate cycle snapshot values
+            product_value_sum += float(product.remaining_quantity_pcs) * float(product.cost_per_pcs)
+            cycle_profit_sum += float((product.sell_price_per_pcs - product.cost_per_pcs) * sold_quantity_pcs)
+
+            # Update product baseline for next cycle: remaining becomes the new total
+            product.total_quantity_pcs = product.remaining_quantity_pcs
+            product.total_quantity_units = product.remaining_quantity_units
+            product.sold_quantity_pcs = 0  # Reset sold for next cycle
+
+        # Compute expenses and debts snapshot for this cycle window
+        # The previous latest_mdc is the older boundary (if any)
+        start_date = latest_mdc.report_date if latest_mdc else None
+        end_date = mdc_report.report_date
+
+        if start_date:
+            expenses_in_cycle = Expense.query.filter(Expense.expense_date > start_date, Expense.expense_date <= end_date).all()
+            debts_in_cycle = Debt.query.filter(Debt.transaction_date > start_date, Debt.transaction_date <= end_date).all()
+        else:
+            expenses_in_cycle = Expense.query.filter(Expense.expense_date <= end_date).all()
+            debts_in_cycle = Debt.query.filter(Debt.transaction_date <= end_date).all()
+
+        total_expenses_cycle = sum(float(e.amount) for e in expenses_in_cycle)
+        total_paybacks_cycle = sum(float(d.amount) for d in debts_in_cycle if d.transaction_type == 'payback')
+        # snapshot of outstanding debts up to end_date
+        outstanding_debts_total = db.session.query(func.coalesce(func.sum(Credit.remaining_balance), 0)).filter(Credit.created_at <= end_date).scalar() or 0.0
+        outstanding_debts_total = float(outstanding_debts_total)
+
+        # Set snapshot fields on the MDC report so historical cycles remain immutable
+        mdc_report.product_value = product_value_sum
+        mdc_report.total_expenses = total_expenses_cycle
+        mdc_report.total_paybacks = total_paybacks_cycle
+        mdc_report.total_debts = outstanding_debts_total
+        mdc_report.total_liquidity = product_value_sum + float(cash_input_value) - total_expenses_cycle - outstanding_debts_total
+        mdc_report.cycle_profit = cycle_profit_sum
+
         db.session.commit()
 
         flash('Monthly stock counts and cash input saved successfully.', 'success')
         return redirect(url_for('products.mdc'))
 
     return render_template('products/mdc.html', products=products, latest_mdc=latest_mdc)
+
+
+
+@products_bp.route('/mdc/reports')
+@login_required
+def mdc_reports():
+    """List MDC reports with search and pagination"""
+    page = request.args.get('page', 1, type=int)
+    search_query = request.args.get('search', '').strip()
+
+    # Query base
+    query = MDCReport.query.order_by(MDCReport.report_date.desc())
+
+    if search_query:
+        # allow searching by id or by date substring
+        if search_query.isdigit():
+            query = query.filter(MDCReport.id == int(search_query))
+        else:
+            # naive date substring search on formatted date
+            all_reports = query.all()
+            filtered = [r for r in all_reports if search_query.lower() in r.report_date.strftime('%b %d, %Y').lower()]
+            # paginate filtered list manually
+            pagination = paginate_items(filtered, page, per_page=20)
+            return render_template('products/mdc_reports.html', reports=pagination['items'], pagination=pagination, search_query=search_query)
+
+    # use flask/sqlalchemy pagination via list for consistency with helpers
+    all_reports = query.all()
+    pagination = paginate_items(all_reports, page, per_page=20)
+
+    return render_template('products/mdc_reports.html', reports=pagination['items'], pagination=pagination, search_query=search_query)
 
 
 @products_bp.route('/add', methods=['GET', 'POST'])
