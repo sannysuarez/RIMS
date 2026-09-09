@@ -82,6 +82,63 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
+                 Current MDC Cycle - Withdrawals/Expenses
+            </div>
+            <div class="card-body">
+                {% if analytics.current_cycle_expenses %}
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-6">
+                            <h5>Total Withdrawals/Expenses</h5>
+                            <h4 class="text-danger">-{{ format_currency(analytics.current_cycle_expenses_total) }}</h4>
+                            <small class="text-muted">Deducted from Total Liquidity</small>
+                            {% if analytics.last_mdc_date %}
+                            <div><small class="text-muted">Since {{ analytics.last_mdc_date.strftime('%b %d, %Y %I:%M %p') }}</small></div>
+                            {% endif %}
+                        </div>
+                        <div class="col-6 text-right">
+                            <a href="{{ url_for('expenses.add_expense') }}" class="btn btn-sm btn-primary">+ Record Withdrawal</a>
+                            <a href="{{ url_for('expenses.index') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Beneficiary</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in analytics.current_cycle_expenses %}
+                        <tr>
+                            <td><small class="text-monospace">{{ expense.expense_date[:19] }}</small></td>
+                            <td><strong>{{ expense.beneficiary_name }}</strong></td>
+                            <td><span class="text-danger">-{{ format_currency(expense.amount) }}</span></td>
+                            <td><small class="text-muted">{{ expense.description if expense.description else '-' }}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <small class="text-muted">💡 These withdrawals will be reset to zero when the next MDC is saved.</small>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <p>No withdrawals/expenses in the current MDC cycle yet.</p>
+                    <a href="{{ url_for('expenses.add_expense') }}" class="btn btn-sm btn-primary">+ Record First Withdrawal</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
                  Top 5 Debtors
             </div>
             <div class="card-body">

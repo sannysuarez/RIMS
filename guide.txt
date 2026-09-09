@@ -1,0 +1,3 @@
+./reset.sh --prod              # Reset production environment
+./reset.sh --dev --no-admin    # Reset dev without creating admin user
+./reset.sh --help              # Show all options

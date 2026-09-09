@@ -22,10 +22,6 @@ dashboard_bp = Blueprint('dashboard', __name__)
 def index():
     """Main dashboard with analytics (server-side calculations)"""
 
-    # Calculate date range (current month)
-    today = datetime.now()
-    month_start = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
     # Get all data for comprehensive calculations
     products = Product.query.all()
     purchases = Purchase.query.all()
@@ -35,16 +31,59 @@ def index():
     cash_input_amount = float(latest_mdc.cash_input) if latest_mdc else 0.0
     cycle_start = latest_mdc.report_date if latest_mdc else None
 
+    # Expenses are based purely on MDC cycle boundaries (not monthly)
     if cycle_start:
-        expenses = Expense.query.filter(Expense.expense_date >= cycle_start).all()
+        # Get expenses on or after the latest MDC was created (belongs to current cycle)
+        current_cycle_expenses = Expense.query.filter(Expense.expense_date >= cycle_start).all()
     else:
-        expenses = Expense.query.all()
+        # If no MDC exists yet, get all expenses
+        current_cycle_expenses = Expense.query.all()
 
-    # Use server-side liquidity calculation with the current MDC cycle expenses
-    liquidity_data = calculate_liquidity_summary(
-        products, purchases, expenses, credits, debts,
-        cash_input=cash_input_amount
-    )
+    # CRITICAL: Calculate liquidity correctly considering MDC snapshots
+    # If we have a latest MDC, use its snapshot as the baseline, then adjust for current cycle
+    if latest_mdc:
+        # Start with the liquidity from the latest MDC (includes all past expenses deducted)
+        base_liquidity = float(latest_mdc.total_liquidity)
+        # Add current cycle expenses (deducted)
+        current_expenses_total = sum(float(e.amount) for e in current_cycle_expenses)
+
+        # Include credit/debt transactions that happened after the latest MDC so they show immediately
+        debts_since_mdc = Debt.query.filter(Debt.transaction_date >= cycle_start).all()
+        new_credits_total = sum(float(d.amount) for d in debts_since_mdc if d.transaction_type == 'credit')
+        new_paybacks_total = sum(float(d.amount) for d in debts_since_mdc if d.transaction_type == 'payback')
+
+        # Net new debts added since last MDC (credits increase debts, paybacks decrease them)
+        net_new_debts = new_credits_total - new_paybacks_total
+
+        # Current total liquidity = baseline - current expenses - net new debts
+        total_liquidity = base_liquidity - current_expenses_total - net_new_debts
+
+        # Build liquidity breakdown for display (include adjustments from current cycle)
+        liquidity_data = {
+            'product_value': float(latest_mdc.product_value or 0),
+            'total_purchases': cash_input_amount,
+            'total_cash_input': cash_input_amount,
+            'total_expenses': current_expenses_total,  # Only current cycle
+            'total_debts': float(latest_mdc.total_debts or 0) + new_credits_total - new_paybacks_total,
+            'total_paybacks': float(latest_mdc.total_paybacks or 0) + new_paybacks_total,
+            'total_liquidity': total_liquidity
+        }
+    else:
+        # No MDC yet: simple calculation with all expenses so far
+        current_cycle_expenses = current_cycle_expenses  # All expenses
+        current_expenses_total = sum(float(e.amount) for e in current_cycle_expenses)
+        
+        liquidity_data = {
+            'product_value': sum(p.calculate_liquidity_value() for p in products),
+            'total_purchases': 0,
+            'total_cash_input': 0,
+            'total_expenses': current_expenses_total,
+            'total_debts': sum(float(c.remaining_balance) for c in credits),
+            'total_paybacks': 0,
+            'total_liquidity': sum(p.calculate_liquidity_value() for p in products) - current_expenses_total - sum(
+                float(c.remaining_balance) for c in credits
+            )
+        }
 
     # Calculate total profit from all MDC cycles (immutable, based on recorded prices)
     all_mdc_product_records = MDCProductRecord.query.all()
@@ -67,10 +106,10 @@ def index():
         func.sum(Product.sold_quantity_pcs)
     ).join(Product).group_by(Category.name).all()
 
-    # 5. Ruf-Yog Corner monthly sales
+    # 5. Ruf-Yog Corner sales (from current MDC cycle)
     ruf_yog_sales = db.session.query(
         func.sum(RufYogPurchase.quantity)
-    ).filter(RufYogPurchase.transaction_date >= month_start).scalar() or 0
+    ).filter(RufYogPurchase.transaction_date >= cycle_start).scalar() or 0 if cycle_start else db.session.query(func.sum(RufYogPurchase.quantity)).scalar() or 0
 
     # 6. MDC Cycle Sales Trends - get all MDC cycles and their product sales (LIFO order)
     all_mdc_reports = MDCReport.query.order_by(MDCReport.report_date.desc()).all()
@@ -176,6 +215,10 @@ def index():
     # Only show up to 5 recent cycles on the dashboard; provide total count for lookup/navigation
     displayed_mdc_cycles = mdc_cycle_data[:5]
 
+    # Current MDC cycle expenses/withdrawals (for prominent display on dashboard)
+    current_expenses_sorted = sorted(current_cycle_expenses, key=lambda x: x.expense_date, reverse=True)
+    current_cycle_expenses_list = [e.to_dict() for e in current_expenses_sorted]
+
     analytics = {
         'total_liquidity': liquidity_data['total_liquidity'],
         'total_profit': total_profit,
@@ -187,7 +230,9 @@ def index():
         'category_sales': [{'category': c[0], 'quantity': c[1] or 0} for c in category_sales],
         'ruf_yog_sales': ruf_yog_sales,
         'mdc_cycle_data': displayed_mdc_cycles,
-        'mdc_total_count': total_mdc_count
+        'mdc_total_count': total_mdc_count,
+        'current_cycle_expenses': current_cycle_expenses_list,
+        'current_cycle_expenses_total': liquidity_data['total_expenses']
     }
 
     return render_template('dashboard/index.html', analytics=analytics)
