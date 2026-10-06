@@ -180,8 +180,9 @@ def calculate_liquidity_summary(products, purchases, expenses, credits, debts, c
     total_cash_input = float(cash_input)
     total_purchases = total_cash_input
 
-    # Total expenses
-    total_expenses = sum(float(e.amount) for e in expenses)
+    # Total expenses are only deducted once. Return/refund entries are kept for audit
+    # but must never add value back into liquidity.
+    total_expenses = sum(float(e.liquidity_effect if hasattr(e, 'liquidity_effect') else e.amount) for e in expenses)
 
     # Outstanding debts from unpaid customer credits
     total_debts = sum(float(c.remaining_balance) for c in credits)

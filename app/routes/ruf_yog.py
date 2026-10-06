@@ -33,7 +33,7 @@ def index():
         cycle_expenses = RufYogExpense.query.all()
         cycle_purchases = RufYogPurchase.query.all()
 
-    total_expenses = sum(float(expense.amount) for expense in cycle_expenses)
+    total_expenses = sum(float(expense.liquidity_effect) for expense in cycle_expenses)
     total_purchase_cost = sum(float(purchase.total_amount) for purchase in cycle_purchases)
     total_remaining_credit = sum(float(credit.remaining_balance) for credit in RufYogCredit.query.all())
     total_paid_credit = sum(float(credit.paid_amount) for credit in RufYogCredit.query.all())

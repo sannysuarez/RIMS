@@ -31,47 +31,47 @@ def index():
     cash_input_amount = float(latest_mdc.cash_input) if latest_mdc else 0.0
     cycle_start = latest_mdc.report_date if latest_mdc else None
 
-    # Expenses are based purely on MDC cycle boundaries (not monthly)
+    # Assign expenses to the MDC cycle in which they were recorded. The form's
+    # expense_date is date-only, so it cannot safely be compared with an MDC
+    # timestamp that includes a time of day.
     if cycle_start:
-        # Get expenses on or after the latest MDC was created (belongs to current cycle)
-        current_cycle_expenses = Expense.query.filter(Expense.expense_date >= cycle_start).all()
+        current_cycle_expenses = Expense.query.filter(Expense.created_at >= cycle_start).all()
     else:
         # If no MDC exists yet, get all expenses
         current_cycle_expenses = Expense.query.all()
 
-    # CRITICAL: Calculate liquidity correctly considering MDC snapshots
-    # If we have a latest MDC, use its snapshot as the baseline, then adjust for current cycle
+    # Keep the dashboard's current position live, using the latest MDC cash input
+    # and current inventory/debt balances. Expense deductions remain cumulative
+    # across MDC cycles so later reports do not restore previously withdrawn funds.
     if latest_mdc:
-        # Start with the liquidity from the latest MDC (includes all past expenses deducted)
-        base_liquidity = float(latest_mdc.total_liquidity)
-        # Add current cycle expenses (deducted)
-        current_expenses_total = sum(float(e.amount) for e in current_cycle_expenses)
+        product_value = sum(product.calculate_liquidity_value() for product in products)
+        cumulative_expenses = sum(
+            float(expense.liquidity_effect) for expense in Expense.query.all()
+        )
+        current_expenses_total = sum(
+            float(expense.liquidity_effect) for expense in current_cycle_expenses
+        )
+        total_debts = sum(float(credit.remaining_balance or 0) for credit in credits)
+        total_paybacks = sum(
+            float(debt.amount) for debt in debts if debt.transaction_type == 'payback'
+        )
+        total_liquidity = (
+            product_value + cash_input_amount - cumulative_expenses - total_debts
+        )
 
-        # Include credit/debt transactions that happened after the latest MDC so they show immediately
-        debts_since_mdc = Debt.query.filter(Debt.transaction_date >= cycle_start).all()
-        new_credits_total = sum(float(d.amount) for d in debts_since_mdc if d.transaction_type == 'credit')
-        new_paybacks_total = sum(float(d.amount) for d in debts_since_mdc if d.transaction_type == 'payback')
-
-        # Net new debts added since last MDC (credits increase debts, paybacks decrease them)
-        net_new_debts = new_credits_total - new_paybacks_total
-
-        # Current total liquidity = baseline - current expenses - net new debts
-        total_liquidity = base_liquidity - current_expenses_total - net_new_debts
-
-        # Build liquidity breakdown for display (include adjustments from current cycle)
         liquidity_data = {
-            'product_value': float(latest_mdc.product_value or 0),
+            'product_value': product_value,
             'total_purchases': cash_input_amount,
             'total_cash_input': cash_input_amount,
-            'total_expenses': current_expenses_total,  # Only current cycle
-            'total_debts': float(latest_mdc.total_debts or 0) + new_credits_total - new_paybacks_total,
-            'total_paybacks': float(latest_mdc.total_paybacks or 0) + new_paybacks_total,
+            'total_expenses': current_expenses_total,
+            'total_debts': total_debts,
+            'total_paybacks': total_paybacks,
             'total_liquidity': total_liquidity
         }
     else:
         # No MDC yet: simple calculation with all expenses so far
         current_cycle_expenses = current_cycle_expenses  # All expenses
-        current_expenses_total = sum(float(e.amount) for e in current_cycle_expenses)
+        current_expenses_total = sum(float(e.liquidity_effect) for e in current_cycle_expenses)
         
         liquidity_data = {
             'product_value': sum(p.calculate_liquidity_value() for p in products),
@@ -135,15 +135,15 @@ def index():
         next_older_mdc = all_mdc_reports[idx+1] if (idx + 1) < total_mdc_count else None
         if next_older_mdc:
             expenses_in_cycle = Expense.query.filter(
-                Expense.expense_date >= mdc.report_date,
-                Expense.expense_date < next_older_mdc.report_date
+                Expense.created_at >= mdc.report_date,
+                Expense.created_at < next_older_mdc.report_date
             ).all()
             debts_in_cycle = Debt.query.filter(
                 Debt.transaction_date >= mdc.report_date,
                 Debt.transaction_date < next_older_mdc.report_date
             ).all()
         else:
-            expenses_in_cycle = Expense.query.filter(Expense.expense_date >= mdc.report_date).all()
+            expenses_in_cycle = Expense.query.filter(Expense.created_at >= mdc.report_date).all()
             debts_in_cycle = Debt.query.filter(Debt.transaction_date >= mdc.report_date).all()
 
         # Product inventory value for this cycle based on recorded prices and remaining qty
@@ -176,7 +176,7 @@ def index():
 
             # Cycle-level liquidity breakdown (mirrors calculate_liquidity_summary but using cycle snapshots)
             cycle_total_cash_input = float(mdc.cash_input)
-            cycle_total_expenses = sum(float(e.amount) for e in expenses_in_cycle)
+            cycle_total_expenses = sum(float(e.liquidity_effect) for e in expenses_in_cycle)
             cycle_total_debts = float(outstanding_debts_total)
             cycle_total_paybacks = sum(float(d.amount) for d in debts_in_cycle if d.transaction_type == 'payback')
 

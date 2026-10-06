@@ -99,10 +99,17 @@ class RufYogExpense(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     beneficiary_name = db.Column(db.String(150), nullable=False, index=True)
+    transaction_type = db.Column(db.String(20), nullable=False, default='expense', index=True)
     description = db.Column(db.Text)
     amount = db.Column(db.Numeric(12, 2), nullable=False)
     expense_date = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
+
+    @property
+    def liquidity_effect(self):
+        if self.transaction_type == 'return':
+            return 0.0
+        return float(self.amount or 0)
 
     def __repr__(self):
         return f'<RufYogExpense {self.id}>'
@@ -111,8 +118,10 @@ class RufYogExpense(db.Model):
         return {
             'id': self.id,
             'beneficiary_name': self.beneficiary_name,
+            'transaction_type': self.transaction_type,
             'description': self.description,
             'amount': float(self.amount),
+            'effective_amount': self.liquidity_effect,
             'expense_date': self.expense_date.isoformat()
         }
 

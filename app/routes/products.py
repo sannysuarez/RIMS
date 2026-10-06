@@ -142,19 +142,24 @@ def mdc():
             product.total_quantity_units = product.remaining_quantity_units
             product.sold_quantity_pcs = 0  # Reset sold for next cycle
 
-        # Compute expenses and debts snapshot for this cycle window
+        # Compute expenses and debts snapshot for this cycle window. Expense cycle
+        # membership uses created_at because expense_date is entered as a date only.
         # The previous latest_mdc is the older boundary (if any)
         start_date = latest_mdc.report_date if latest_mdc else None
         end_date = mdc_report.report_date
 
         if start_date:
-            expenses_in_cycle = Expense.query.filter(Expense.expense_date > start_date, Expense.expense_date <= end_date).all()
+            expenses_in_cycle = Expense.query.filter(Expense.created_at > start_date, Expense.created_at <= end_date).all()
             debts_in_cycle = Debt.query.filter(Debt.transaction_date > start_date, Debt.transaction_date <= end_date).all()
         else:
-            expenses_in_cycle = Expense.query.filter(Expense.expense_date <= end_date).all()
+            expenses_in_cycle = Expense.query.filter(Expense.created_at <= end_date).all()
             debts_in_cycle = Debt.query.filter(Debt.transaction_date <= end_date).all()
 
-        total_expenses_cycle = sum(float(e.amount) for e in expenses_in_cycle)
+        total_expenses_cycle = sum(float(e.liquidity_effect) for e in expenses_in_cycle)
+        cumulative_expenses = sum(
+            float(expense.liquidity_effect)
+            for expense in Expense.query.filter(Expense.created_at <= end_date).all()
+        )
         total_paybacks_cycle = sum(float(d.amount) for d in debts_in_cycle if d.transaction_type == 'payback')
         # snapshot of outstanding debts up to end_date
         outstanding_debts_total = db.session.query(func.coalesce(func.sum(Credit.remaining_balance), 0)).filter(Credit.created_at <= end_date).scalar() or 0.0
@@ -165,7 +170,7 @@ def mdc():
         mdc_report.total_expenses = total_expenses_cycle
         mdc_report.total_paybacks = total_paybacks_cycle
         mdc_report.total_debts = outstanding_debts_total
-        mdc_report.total_liquidity = product_value_sum + float(cash_input_value) - total_expenses_cycle - outstanding_debts_total
+        mdc_report.total_liquidity = product_value_sum + float(cash_input_value) - cumulative_expenses - outstanding_debts_total
         mdc_report.cycle_profit = cycle_profit_sum
 
         db.session.commit()

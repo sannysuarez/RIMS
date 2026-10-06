@@ -20,19 +20,22 @@ def index():
 @expenses_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_expense():
-    """Add new expense/withdrawal"""
+    """Add new expense/withdrawal."""
     if request.method == 'POST':
         beneficiary_name = request.form.get('beneficiary_name')
         beneficiary_address = request.form.get('beneficiary_address')
         amount = request.form.get('amount', type=float)
         description = request.form.get('description')
         expense_date = request.form.get('expense_date')
+        transaction_type = (request.form.get('transaction_type') or 'expense').strip().lower()
 
         errors = []
         if not beneficiary_name or not beneficiary_name.strip():
             errors.append('Beneficiary name is required')
         if amount is None or amount <= 0:
             errors.append('Amount must be greater than zero')
+        if transaction_type not in {'expense', 'return'}:
+            errors.append('Transaction type must be either Expense or Return')
         if not expense_date:
             errors.append('Expense date is required')
 
@@ -44,11 +47,13 @@ def add_expense():
                                    beneficiary_address=beneficiary_address,
                                    amount=request.form.get('amount', ''),
                                    description=description,
-                                   expense_date=expense_date)
+                                   expense_date=expense_date,
+                                   transaction_type=transaction_type)
 
         expense = Expense(
             beneficiary_name=beneficiary_name.strip(),
             beneficiary_address=beneficiary_address.strip() if beneficiary_address else None,
+            transaction_type=transaction_type,
             amount=amount,
             description=description.strip() if description else None,
             expense_date=datetime.fromisoformat(expense_date)
@@ -57,7 +62,10 @@ def add_expense():
         db.session.add(expense)
         db.session.commit()
 
-        flash('Expense recorded successfully', 'success')
+        if transaction_type == 'return':
+            flash('Expense return recorded successfully. It will not be added back to liquidity.', 'success')
+        else:
+            flash('Expense recorded successfully', 'success')
         return redirect(url_for('expenses.index'))
 
     return render_template('expenses/add.html')

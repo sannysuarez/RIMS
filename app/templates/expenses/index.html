@@ -26,6 +26,7 @@
                                 <th>#</th>
                                 <th>Date</th>
                                 <th>Beneficiary</th>
+                                <th>Type</th>
                                 <th>Description</th>
                                 <th>Amount</th>
                                 <th>Actions</th>
@@ -37,6 +38,13 @@
                                 <td>{{ expense.id }}</td>
                                 <td>{{ expense.expense_date.strftime('%Y-%m-%d') }}</td>
                                 <td>{{ expense.beneficiary_name }}</td>
+                                <td>
+                                    {% if expense.transaction_type == 'return' %}
+                                    <span class="badge bg-warning text-dark">Return</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Expense</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ expense.description[:60] if expense.description else 'No description' }}</td>
                                 <td>{{ format_currency(expense.amount) }}</td>
                                 <td>

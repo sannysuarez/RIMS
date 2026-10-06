@@ -61,9 +61,6 @@
                         <div class="text-center">
                             <h5 style="color: red;">-{{ format_currency(analytics.liquidity_breakdown['total_expenses']) }}</h5>
                             <small class="text-muted">Expenses/Withdrawals</small>
-                            {% if analytics.last_mdc_date %}
-                            <div><small class="text-muted">since {{ analytics.last_mdc_date.strftime('%b %d, %Y %I:%M %p') }}</small></div>
-                            {% endif %}
                         </div>
                     </div>
                     <div class="col-3">
@@ -82,7 +79,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                 Current MDC Cycle - Withdrawals/Expenses
+                 Current Withdrawals/Expenses
             </div>
             <div class="card-body">
                 {% if analytics.current_cycle_expenses %}
@@ -126,8 +123,8 @@
                 <small class="text-muted">💡 These withdrawals will be reset to zero when the next MDC is saved.</small>
                 {% else %}
                 <div class="text-center text-muted py-4">
-                    <p>No withdrawals/expenses in the current MDC cycle yet.</p>
-                    <a href="{{ url_for('expenses.add_expense') }}" class="btn btn-sm btn-primary">+ Record First Withdrawal</a>
+                    <p>No current withdrawals/expenses yet.</p>
+                    <a href="{{ url_for('expenses.add_expense') }}" class="btn btn-sm btn-primary">+ Record with/exp</a>
                 </div>
                 {% endif %}
             </div>

@@ -31,7 +31,14 @@
                     </div>
 
                     <div class="row g-3 mt-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label for="transaction_type" class="form-label">Entry Type *</label>
+                            <select class="form-select" id="transaction_type" name="transaction_type" required>
+                                <option value="expense" {% if (transaction_type or request.form.transaction_type or 'expense') == 'expense' %}selected{% endif %}>Expense / Withdrawal</option>
+                                <option value="return" {% if (transaction_type or request.form.transaction_type) == 'return' %}selected{% endif %}>Return / Reversal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <label for="amount" class="form-label">Amount (₦) *</label>
                             <div class="input-group">
                                 <span class="input-group-text">₦</span>
@@ -40,7 +47,7 @@
                             </div>
                             <div class="invalid-feedback">Enter a valid amount greater than zero.</div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="beneficiary_address" class="form-label">Beneficiary Address</label>
                             <input type="text" class="form-control" id="beneficiary_address" name="beneficiary_address"
                                    value="{{ beneficiary_address or request.form.beneficiary_address }}">

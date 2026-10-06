@@ -71,6 +71,19 @@ def create_app(config_name=None):
                 db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN cycle_profit NUMERIC(12, 2) DEFAULT 0'))
                 db.session.commit()
 
+    def ensure_expense_transaction_type_columns():
+        """Add transaction_type columns to older SQLite schemas."""
+        inspector = inspect(db.engine)
+        tables = inspector.get_table_names()
+
+        for table_name in ['expenses', 'ruf_yog_expenses']:
+            if table_name not in tables:
+                continue
+            columns = [col['name'] for col in inspector.get_columns(table_name)]
+            if 'transaction_type' not in columns:
+                db.session.execute(text(f'ALTER TABLE {table_name} ADD COLUMN transaction_type VARCHAR(20) DEFAULT "expense"'))
+                db.session.commit()
+
     # Create upload folder if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
@@ -113,6 +126,8 @@ def create_app(config_name=None):
         ensure_mdc_product_record_columns()
         # Ensure MDC reports snapshot columns exist (for older databases)
         ensure_mdc_report_snapshot_columns()
+        # Ensure older SQLite schemas include the transaction_type column used by expense tracking.
+        ensure_expense_transaction_type_columns()
 
     from app.models.user import User
 
