@@ -2,19 +2,30 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from app import db
-from app.models.product import Product, Category
+from app.models.product import Product
 from app.models.purchase import Purchase
 from app.models.expense import Expense
 from app.models.credit import Credit, Debt
 from app.models.mdc import MDCReport
 from app.models.mdc_product_record import MDCProductRecord
-from app.models.ruf_yog import RufYogPurchase
 from app.utils.helpers import calculate_liquidity_summary, format_currency
 from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 
 
 dashboard_bp = Blueprint('dashboard', __name__)
+
+
+def _aggregate_category_sales(sales):
+    quantities_by_category = {}
+    for category_name, quantity in sales:
+        quantities_by_category[category_name] = (
+            quantities_by_category.get(category_name, 0) + int(quantity or 0)
+        )
+    return [
+        {'category': category_name, 'quantity': quantity}
+        for category_name, quantity in sorted(quantities_by_category.items())
+    ]
 
 
 @dashboard_bp.route('/')
@@ -98,20 +109,46 @@ def index():
     ).limit(5).all()
 
     # 3. Top 10 Best Selling Products
-    top_products = Product.query.order_by(desc(Product.sold_quantity_pcs)).limit(10).all()
+    latest_cycle_sales = {}
+    if latest_mdc:
+        latest_cycle_sales = {
+            record.product_id: int(record.sold_quantity_pcs or 0)
+            for record in MDCProductRecord.query.filter_by(mdc_report_id=latest_mdc.id).all()
+        }
 
-    # 4. Sales by Category
-    category_sales = db.session.query(
-        Category.name,
-        func.sum(Product.sold_quantity_pcs)
-    ).join(Product).group_by(Category.name).all()
+    top_products = sorted(
+        products,
+        key=lambda product: latest_cycle_sales.get(
+            product.id, int(product.sold_quantity_pcs or 0)
+        ),
+        reverse=True
+    )[:10]
+    top_products_data = []
+    for product in top_products:
+        product_data = product.to_dict()
+        product_data['sold_quantity_pcs'] = latest_cycle_sales.get(
+            product.id, int(product.sold_quantity_pcs or 0)
+        )
+        top_products_data.append(product_data)
 
-    # 5. Ruf-Yog Corner sales (from current MDC cycle)
-    ruf_yog_sales = db.session.query(
-        func.sum(RufYogPurchase.quantity)
-    ).filter(RufYogPurchase.transaction_date >= cycle_start).scalar() or 0 if cycle_start else db.session.query(func.sum(RufYogPurchase.quantity)).scalar() or 0
+    # 4. Sales by Category for the latest saved MDC cycle
+    if latest_mdc:
+        latest_cycle_product_records = MDCProductRecord.query.filter_by(
+            mdc_report_id=latest_mdc.id
+        ).all()
+        category_sales = _aggregate_category_sales(
+            (record.product.category.name, record.sold_quantity_pcs)
+            for record in latest_cycle_product_records
+            if record.product and record.product.category
+        )
+    else:
+        category_sales = _aggregate_category_sales(
+            (product.category.name, product.sold_quantity_pcs)
+            for product in products
+            if product.category
+        )
 
-    # 6. MDC Cycle Sales Trends - get all MDC cycles and their product sales (LIFO order)
+    # 5. MDC Cycle Sales Trends - get all MDC cycles and their product sales (LIFO order)
     all_mdc_reports = MDCReport.query.order_by(MDCReport.report_date.desc()).all()
     total_mdc_count = len(all_mdc_reports)
     
@@ -125,6 +162,11 @@ def index():
         
         total_sold = sum(pr.sold_quantity_pcs for pr in product_records)
         total_remaining = sum(pr.remaining_quantity_pcs for pr in product_records)
+        cycle_category_sales = _aggregate_category_sales(
+            (record.product.category.name, record.sold_quantity_pcs)
+            for record in product_records
+            if record.product and record.product.category
+        )
         
         # Calculate profit from sold units in this cycle using recorded prices
         cycle_profit = sum(
@@ -202,6 +244,7 @@ def index():
             'expenses_total': cycle_total_expenses,
             'expenses': [e.to_dict() for e in expenses_in_cycle],
             'outstanding_debts': cycle_total_debts,
+            'category_sales': cycle_category_sales,
             'product_details': [
                 {
                     'product_name': pr.product.name,
@@ -226,9 +269,8 @@ def index():
         'last_mdc_date': latest_mdc.report_date if latest_mdc else None,
         'liquidity_breakdown': liquidity_data,
         'top_5_debtors': [d.to_dict() for d in top_5_debtors],
-        'top_products': [p.to_dict() for p in top_products],
-        'category_sales': [{'category': c[0], 'quantity': c[1] or 0} for c in category_sales],
-        'ruf_yog_sales': ruf_yog_sales,
+        'top_products': top_products_data,
+        'category_sales': category_sales,
         'mdc_cycle_data': displayed_mdc_cycles,
         'mdc_total_count': total_mdc_count,
         'current_cycle_expenses': current_cycle_expenses_list,

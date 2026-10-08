@@ -76,12 +76,21 @@ def create_app(config_name=None):
         inspector = inspect(db.engine)
         tables = inspector.get_table_names()
 
-        for table_name in ['expenses', 'ruf_yog_expenses']:
+        for table_name in ['expenses']:
             if table_name not in tables:
                 continue
             columns = [col['name'] for col in inspector.get_columns(table_name)]
             if 'transaction_type' not in columns:
                 db.session.execute(text(f'ALTER TABLE {table_name} ADD COLUMN transaction_type VARCHAR(20) DEFAULT "expense"'))
+                db.session.commit()
+
+    def ensure_user_phone_number_column():
+        """Add the optional phone number field to existing user tables."""
+        inspector = inspect(db.engine)
+        if 'users' in inspector.get_table_names():
+            columns = [column['name'] for column in inspector.get_columns('users')]
+            if 'phone_number' not in columns:
+                db.session.execute(text('ALTER TABLE users ADD COLUMN phone_number VARCHAR(30)'))
                 db.session.commit()
 
     # Create upload folder if it doesn't exist
@@ -94,7 +103,7 @@ def create_app(config_name=None):
     from app.routes.purchases import purchases_bp
     from app.routes.expenses import expenses_bp
     from app.routes.credits import credits_bp
-    from app.routes.ruf_yog import ruf_yog_bp
+    from app.routes.settings import settings_bp
     from app.routes.misc import misc_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -103,7 +112,7 @@ def create_app(config_name=None):
     app.register_blueprint(purchases_bp, url_prefix='/purchases')
     app.register_blueprint(expenses_bp, url_prefix='/expenses')
     app.register_blueprint(credits_bp, url_prefix='/credits')
-    app.register_blueprint(ruf_yog_bp, url_prefix='/ruf-yog')
+    app.register_blueprint(settings_bp, url_prefix='/settings')
     app.register_blueprint(misc_bp, url_prefix='/misc')
     
     # Create database tables
@@ -128,6 +137,7 @@ def create_app(config_name=None):
         ensure_mdc_report_snapshot_columns()
         # Ensure older SQLite schemas include the transaction_type column used by expense tracking.
         ensure_expense_transaction_type_columns()
+        ensure_user_phone_number_column()
 
     from app.models.user import User
 

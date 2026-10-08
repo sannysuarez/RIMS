@@ -3,7 +3,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from app import create_app, db
-from app.models import User, Product, Category, Purchase, PurchaseItem, Expense, Credit, Debt, MiscProduct, MiscPurchase, RufYogProduct, RufYogPurchase
+from app.models import User, Product, Category, Purchase, PurchaseItem, Expense, Credit, Debt, MiscProduct, MiscPurchase
 
 # Load environment variables
 load_dotenv()
@@ -25,8 +25,6 @@ def make_shell_context():
         'Debt': Debt,
         'MiscProduct': MiscProduct,
         'MiscPurchase': MiscPurchase,
-        'RufYogProduct': RufYogProduct,
-        'RufYogPurchase': RufYogPurchase
     }
 
 

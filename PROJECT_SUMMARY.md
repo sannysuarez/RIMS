@@ -25,7 +25,6 @@ app/models/
 ├── purchase.py      ← Purchase & PurchaseItem models
 ├── expense.py       ← Expense/withdrawal model
 ├── credit.py        ← Credit & Debt models
-├── ruf_yog.py       ← RufYogProduct & RufYogPurchase
 ├── misc.py          ← MiscProduct & MiscPurchase
 └── __init__.py      ← Model exports
 ```
@@ -46,7 +45,6 @@ app/routes/
 ├── purchases.py     ← Purchase transactions
 ├── expenses.py      ← Expense tracking
 ├── credits.py       ← Credit/debt management
-├── ruf_yog.py       ← Special products section
 ├── misc.py          ← Miscellaneous items
 └── __init__.py      ← Blueprint registration
 ```
@@ -136,7 +134,7 @@ app/utils/
 - **Main Inventory**: Products with categories, multi-unit tracking
 - **Purchase System**: Transaction history with price tracking
 - **Financial**: Expenses, credits, debts
-- **Special Sections**: Ruf-Yog corner, miscellaneous items
+- **Special Sections**: Miscellaneous items
 - **Analytics**: Liquidity calculations, debtor tracking
 
 ### Security
@@ -165,7 +163,6 @@ app/utils/
 - Best-selling products
 - Sales by category
 - Monthly trends
-- Ruf-Yog sales metrics
 
 ### Product Management
 - Add new products with unique IDs
@@ -190,7 +187,6 @@ app/utils/
 - Debt history
 
 ### Special Sections
-- Ruf-Yog corner (admin controlled)
 - Miscellaneous items
 - Simplified tracking for non-standard items
 
@@ -241,7 +237,6 @@ raasu/
 │   │   ├── purchase.py
 │   │   ├── expense.py
 │   │   ├── credit.py
-│   │   ├── ruf_yog.py
 │   │   └── misc.py
 │   ├── routes/
 │   │   ├── __init__.py
@@ -251,7 +246,6 @@ raasu/
 │   │   ├── purchases.py
 │   │   ├── expenses.py
 │   │   ├── credits.py
-│   │   ├── ruf_yog.py
 │   │   └── misc.py
 │   ├── templates/
 │   │   ├── base.html

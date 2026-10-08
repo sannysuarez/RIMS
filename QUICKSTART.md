@@ -85,10 +85,8 @@ Navigate to `http://localhost:5000` and login with your admin credentials.
 6. **Expense** - Expenses/withdrawals
 7. **Credit** - Customer credits
 8. **Debt** - Debt transactions
-9. **RufYogProduct** - Ruf-Yog corner products
-10. **RufYogPurchase** - Ruf-Yog transactions
-11. **MiscProduct** - Miscellaneous items
-12. **MiscPurchase** - Miscellaneous transactions
+9. **MiscProduct** - Miscellaneous items
+10. **MiscPurchase** - Miscellaneous transactions
 
 ### Features Implemented
 - ✅ User authentication with secure passwords
@@ -97,7 +95,6 @@ Navigate to `http://localhost:5000` and login with your admin credentials.
 - ✅ Purchase transaction recording
 - ✅ Expense/withdrawal tracking
 - ✅ Customer credit/debt management
-- ✅ Ruf-Yog corner (special products section)
 - ✅ Miscellaneous items section
 - ✅ Role-based access control (admin functions)
 - ✅ Search and filtering
@@ -203,7 +200,6 @@ The app supports three environments:
 
 ### Multi-Section Support
 1. **Main Inventory**: Standard products with categories
-2. **Ruf-Yog Corner**: Special products section with admin control
 3. **Miscellaneous**: Non-standard items with simplified tracking
 
 ## 🚀 To Get Running Immediately

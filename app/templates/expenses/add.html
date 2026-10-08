@@ -35,7 +35,7 @@
                             <label for="transaction_type" class="form-label">Entry Type *</label>
                             <select class="form-select" id="transaction_type" name="transaction_type" required>
                                 <option value="expense" {% if (transaction_type or request.form.transaction_type or 'expense') == 'expense' %}selected{% endif %}>Expense / Withdrawal</option>
-                                <option value="return" {% if (transaction_type or request.form.transaction_type) == 'return' %}selected{% endif %}>Return / Reversal</option>
+                               <!-- <option value="return" {% if (transaction_type or request.form.transaction_type) == 'return' %}selected{% endif %}>Return / Reversal</option>-->
                             </select>
                         </div>
                         <div class="col-md-4">

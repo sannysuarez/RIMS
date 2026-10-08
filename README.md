@@ -9,7 +9,7 @@ A scalable, production-ready web application for managing ceramic shop inventory
 - **Purchase Tracking**: Detailed purchase transactions with historical pricing support
 - **Expenses/Withdrawals**: Track all expenses and cash withdrawals with beneficiary information
 - **Credits & Debts**: Manage customer credits with full payment tracking
-- **Ruf-Yog Corner**: Dedicated special products section with admin controls
+- **Admin Account Settings**: Update the administrator's name, email, phone number, and password
 - **Miscellaneous Items**: Separate inventory for non-standard items
 - **Dashboard Analytics**: Real-time charts and metrics for business intelligence
 
@@ -18,7 +18,6 @@ A scalable, production-ready web application for managing ceramic shop inventory
 - **Debt Analysis**: Top 5 highest debtors with amounts
 - **Top Products**: Best-selling products by quantity (top 10)
 - **Category Sales**: Sales breakdown by product category
-- **Ruf-Yog Sales**: Monthly sales metrics for special products section
 - **Monthly Trends**: Historical monthly financial data
 
 ### 🔐 Security & Access Control
@@ -71,7 +70,6 @@ raasu/
 │   │   ├── purchase.py        # Purchase transactions
 │   │   ├── expense.py         # Expenses/Withdrawals
 │   │   ├── credit.py          # Credits/Debts
-│   │   ├── ruf_yog.py         # Ruf-Yog corner products
 │   │   └── misc.py            # Miscellaneous items
 │   │
 │   ├── routes/                # Blueprint routes
@@ -82,7 +80,6 @@ raasu/
 │   │   ├── purchases.py       # Purchase management
 │   │   ├── expenses.py        # Expense management
 │   │   ├── credits.py         # Credit/debt management
-│   │   ├── ruf_yog.py         # Ruf-Yog corner routes
 │   │   └── misc.py            # Miscellaneous routes
 │   │
 │   ├── templates/             # HTML templates
@@ -92,7 +89,6 @@ raasu/
 │   │   ├── purchases/
 │   │   ├── expenses/
 │   │   ├── credits/
-│   │   ├── ruf_yog/
 │   │   └── misc/
 │   │
 │   ├── static/                # Static files
@@ -121,8 +117,6 @@ Database Models:
 ├── Expense                   # Expenses/withdrawals
 ├── Credit                    # Customer credits
 ├── Debt                      # Debt transactions
-├── RufYogProduct             # Ruf-Yog products
-├── RufYogPurchase            # Ruf-Yog transactions
 ├── MiscProduct               # Miscellaneous products
 └── MiscPurchase              # Miscellaneous transactions
 ```
@@ -271,12 +265,8 @@ Total Liquidity = (Product Inventory Value)
 - `GET/POST /credits/<id>/payback` - Record payment
 - `GET /credits/<id>` - View credit details
 
-### Ruf-Yog Corner
-- `GET /ruf-yog/` - Ruf-Yog products
-- `GET/POST /ruf-yog/add-product` - Add product
-- `GET/POST /ruf-yog/add-purchase` - Add purchase
-- `GET /ruf-yog/<id>` - View product
-- `GET/POST /ruf-yog/<id>/edit` - Edit (admin only)
+### Settings
+- `GET/POST /settings/` - Update the signed-in administrator's account details
 
 ### Miscellaneous
 - `GET /misc/` - Misc products
