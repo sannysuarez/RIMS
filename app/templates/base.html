@@ -28,10 +28,11 @@
                     {% if current_user.is_admin %}
                     <div class="dropdown me-3">
                         <button class="btn btn-outline-light dropdown-toggle" type="button" id="shopDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-shop"></i> Shop Switch
+                            <i class="bi bi-shop"></i> {{ active_shop_name }}
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="shopDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('index') }}">Select Shop</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('select_shop', shop_name='ceramics') }}">Shop Ceramics</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('select_shop', shop_name='itobe') }}">Shop Itobe</a></li>
                         </ul>
                     </div>
                     {% endif %}

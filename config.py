@@ -59,7 +59,10 @@ class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
     TESTING = False
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///raasu_dev.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///raasu_dev.db'
+    SQLALCHEMY_BINDS = {
+        'itobe': os.environ.get('ITOBE_DATABASE_URL') or 'sqlite:///raasu_itobe_dev.db'
+    }
     SESSION_COOKIE_SECURE = False
 
 
@@ -68,6 +71,7 @@ class TestingConfig(Config):
     DEBUG = False
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_BINDS = {'itobe': 'sqlite:///:memory:'}
     WTF_CSRF_ENABLED = False
 
 
@@ -77,6 +81,9 @@ class ProductionConfig(Config):
     TESTING = False
     # Use SQLite for production (scalable with proper indexing)
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///raasu_production.db'
+    SQLALCHEMY_BINDS = {
+        'itobe': os.environ.get('ITOBE_DATABASE_URL') or 'sqlite:///raasu_itobe_production.db'
+    }
 
 
 config_by_name = {

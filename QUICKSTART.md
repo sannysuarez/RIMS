@@ -136,6 +136,7 @@ Copy to `.env` and configure:
 FLASK_ENV=development
 SECRET_KEY=your-secret-key
 DATABASE_URL=sqlite:///raasu.db
+ITOBE_DATABASE_URL=sqlite:///raasu_itobe.db
 ```
 
 ## 🎨 UI/UX
@@ -171,7 +172,10 @@ The app supports three environments:
 
 ### Production
 - Debug: Disabled
-- Database: PostgreSQL (via DATABASE_URL env var)
+- Shop Ceramics database: `DATABASE_URL`
+- Shop Itobe database: `ITOBE_DATABASE_URL`
+
+Shop data is isolated between the two databases, which share the same application schema and logic. User accounts are shared, so the same admin login works for either shop.
 - Location: config.py - ProductionConfig
 
 ## 🔒 Security

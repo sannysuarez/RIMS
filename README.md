@@ -177,18 +177,23 @@ FLASK_ENV=development
 FLASK_APP=run.py
 SECRET_KEY=your-secret-key-here-change-in-production
 DATABASE_URL=sqlite:///raasu.db
+ITOBE_DATABASE_URL=sqlite:///raasu_itobe.db
 ```
+
+The app keeps Shop Ceramics and Shop Itobe data in separate databases. Both use the same schema and application logic. `DATABASE_URL` configures Shop Ceramics and `ITOBE_DATABASE_URL` configures Shop Itobe; if the latter is omitted, the environment-specific Itobe SQLite database is used. User accounts are stored in the shared Shop Ceramics database so the same admin credentials work for both shops.
 
 ### Configuration Classes
 
 **DevelopmentConfig** (default):
 - Debug: Enabled
-- Database: SQLite (raasu_dev.db)
+- Shop Ceramics database: SQLite (`raasu_dev.db`)
+- Shop Itobe database: SQLite (`raasu_itobe_dev.db`)
 - Session: Not secure (for development)
 
 **ProductionConfig**:
 - Debug: Disabled
-- Database: PostgreSQL (via DATABASE_URL)
+- Shop Ceramics database: `DATABASE_URL` (defaults to SQLite)
+- Shop Itobe database: `ITOBE_DATABASE_URL` (defaults to SQLite)
 - Session: HTTPS/Secure cookies only
 
 **TestingConfig**:
@@ -295,7 +300,6 @@ Total Liquidity = (Product Inventory Value)
 - ✅ Environment-based configuration
 
 ### Future Enhancements
-- Multi-shop support (add `shop_id` to all tables)
 - Multi-currency support (currency field in expenses)
 - Advanced reporting (PDF/Excel exports)
 - Real-time inventory alerts

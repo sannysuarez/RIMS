@@ -1,15 +1,36 @@
 """Flask Application Factory"""
-from flask import Flask, redirect, url_for, render_template
+from flask import Flask, abort, has_request_context, redirect, render_template, session as flask_session, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy.session import Session as FlaskSQLAlchemySession
 from flask_login import LoginManager, current_user
 from sqlalchemy import inspect, text
 from config import config_by_name
 import os
 
+
+class ShopRoutingSession(FlaskSQLAlchemySession):
+    """Route shop data to its database while keeping users in the shared database."""
+
+    def get_bind(self, mapper=None, clause=None, bind=None, **kwargs):
+        if (
+            mapper is not None
+            and mapper.local_table.name != 'users'
+            and has_request_context()
+            and flask_session.get('active_shop', 'ceramics') == 'itobe'
+        ):
+            return db.engines['itobe']
+        return super().get_bind(mapper=mapper, clause=clause, bind=bind, **kwargs)
+
+
 # Initialize extensions
-db = SQLAlchemy()
+db = SQLAlchemy(session_options={'class_': ShopRoutingSession})
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
+
+SHOP_NAMES = {
+    'ceramics': 'Shop Ceramics',
+    'itobe': 'Shop Itobe',
+}
 
 
 def create_app(config_name=None):
@@ -34,46 +55,40 @@ def create_app(config_name=None):
     db.init_app(app)
     login_manager.init_app(app)
     
-    def ensure_mdc_product_record_columns():
+    def ensure_mdc_product_record_columns(engine):
         """Ensure mdc_product_records table has the price columns (schema migration helper)"""
-        inspector = inspect(db.engine)
+        inspector = inspect(engine)
         if 'mdc_product_records' in inspector.get_table_names():
             columns = [col['name'] for col in inspector.get_columns('mdc_product_records')]
-            if 'cost_per_pcs_at_record' not in columns:
-                db.session.execute(text('ALTER TABLE mdc_product_records ADD COLUMN cost_per_pcs_at_record NUMERIC(10, 2) DEFAULT 0'))
-                db.session.commit()
-            if 'sell_price_per_pcs_at_record' not in columns:
-                db.session.execute(text('ALTER TABLE mdc_product_records ADD COLUMN sell_price_per_pcs_at_record NUMERIC(10, 2) DEFAULT 0'))
-                db.session.commit()
+            with engine.begin() as connection:
+                if 'cost_per_pcs_at_record' not in columns:
+                    connection.execute(text('ALTER TABLE mdc_product_records ADD COLUMN cost_per_pcs_at_record NUMERIC(10, 2) DEFAULT 0'))
+                if 'sell_price_per_pcs_at_record' not in columns:
+                    connection.execute(text('ALTER TABLE mdc_product_records ADD COLUMN sell_price_per_pcs_at_record NUMERIC(10, 2) DEFAULT 0'))
 
-    def ensure_mdc_report_snapshot_columns():
+    def ensure_mdc_report_snapshot_columns(engine):
         """Ensure mdc_reports table has snapshot columns for immutability"""
-        inspector = inspect(db.engine)
+        inspector = inspect(engine)
         if 'mdc_reports' in inspector.get_table_names():
             columns = [col['name'] for col in inspector.get_columns('mdc_reports')]
-            # Add numeric snapshot columns if missing
-            if 'product_value' not in columns:
-                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN product_value NUMERIC(12, 2) DEFAULT 0'))
-                db.session.commit()
-            if 'total_expenses' not in columns:
-                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN total_expenses NUMERIC(12, 2) DEFAULT 0'))
-                db.session.commit()
-            if 'total_debts' not in columns:
-                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN total_debts NUMERIC(12, 2) DEFAULT 0'))
-                db.session.commit()
-            if 'total_paybacks' not in columns:
-                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN total_paybacks NUMERIC(12, 2) DEFAULT 0'))
-                db.session.commit()
-            if 'total_liquidity' not in columns:
-                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN total_liquidity NUMERIC(12, 2) DEFAULT 0'))
-                db.session.commit()
-            if 'cycle_profit' not in columns:
-                db.session.execute(text('ALTER TABLE mdc_reports ADD COLUMN cycle_profit NUMERIC(12, 2) DEFAULT 0'))
-                db.session.commit()
+            snapshot_columns = {
+                'product_value': 'NUMERIC(12, 2)',
+                'total_expenses': 'NUMERIC(12, 2)',
+                'total_debts': 'NUMERIC(12, 2)',
+                'total_paybacks': 'NUMERIC(12, 2)',
+                'total_liquidity': 'NUMERIC(12, 2)',
+                'cycle_profit': 'NUMERIC(12, 2)',
+            }
+            with engine.begin() as connection:
+                for column_name, column_type in snapshot_columns.items():
+                    if column_name not in columns:
+                        connection.execute(text(
+                            f'ALTER TABLE mdc_reports ADD COLUMN {column_name} {column_type} DEFAULT 0'
+                        ))
 
-    def ensure_expense_transaction_type_columns():
+    def ensure_expense_transaction_type_columns(engine):
         """Add transaction_type columns to older SQLite schemas."""
-        inspector = inspect(db.engine)
+        inspector = inspect(engine)
         tables = inspector.get_table_names()
 
         for table_name in ['expenses']:
@@ -81,17 +96,17 @@ def create_app(config_name=None):
                 continue
             columns = [col['name'] for col in inspector.get_columns(table_name)]
             if 'transaction_type' not in columns:
-                db.session.execute(text(f'ALTER TABLE {table_name} ADD COLUMN transaction_type VARCHAR(20) DEFAULT "expense"'))
-                db.session.commit()
+                with engine.begin() as connection:
+                    connection.execute(text(f'ALTER TABLE {table_name} ADD COLUMN transaction_type VARCHAR(20) DEFAULT "expense"'))
 
-    def ensure_user_phone_number_column():
+    def ensure_user_phone_number_column(engine):
         """Add the optional phone number field to existing user tables."""
-        inspector = inspect(db.engine)
+        inspector = inspect(engine)
         if 'users' in inspector.get_table_names():
             columns = [column['name'] for column in inspector.get_columns('users')]
             if 'phone_number' not in columns:
-                db.session.execute(text('ALTER TABLE users ADD COLUMN phone_number VARCHAR(30)'))
-                db.session.commit()
+                with engine.begin() as connection:
+                    connection.execute(text('ALTER TABLE users ADD COLUMN phone_number VARCHAR(30)'))
 
     # Create upload folder if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -117,27 +132,35 @@ def create_app(config_name=None):
     
     # Create database tables
     with app.app_context():
+        from app.models import Category
+
         db.create_all()
+        db.Model.metadata.create_all(bind=db.engines['itobe'])
 
         if app.config.get('DEBUG') or app.config.get('TESTING'):
-            from app.models.product import Category
             default_categories = app.config.get('DEFAULT_PRODUCT_CATEGORIES', [])
-            existing_names = {category.name.lower() for category in Category.query.all()}
+            for engine in db.engines.values():
+                with engine.begin() as connection:
+                    existing_names = {
+                        name.lower()
+                        for name in connection.execute(
+                            db.Model.metadata.tables['categories'].select()
+                            .with_only_columns(Category.name)
+                        ).scalars()
+                    }
 
-            for cat_data in default_categories:
-                if cat_data['name'].lower() not in existing_names:
-                    db.session.add(Category(name=cat_data['name'], description=cat_data['description']))
+                    for category_data in default_categories:
+                        if category_data['name'].lower() not in existing_names:
+                            connection.execute(Category.__table__.insert().values(
+                                name=category_data['name'],
+                                description=category_data['description'],
+                            ))
 
-            if db.session.new:
-                db.session.commit()
-        
-        # Ensure MDC product record schema is up to date
-        ensure_mdc_product_record_columns()
-        # Ensure MDC reports snapshot columns exist (for older databases)
-        ensure_mdc_report_snapshot_columns()
-        # Ensure older SQLite schemas include the transaction_type column used by expense tracking.
-        ensure_expense_transaction_type_columns()
-        ensure_user_phone_number_column()
+        for engine in db.engines.values():
+            ensure_mdc_product_record_columns(engine)
+            ensure_mdc_report_snapshot_columns(engine)
+            ensure_expense_transaction_type_columns(engine)
+            ensure_user_phone_number_column(engine)
 
     from app.models.user import User
 
@@ -154,6 +177,20 @@ def create_app(config_name=None):
     @app.route('/')
     def index():
         return render_template('shop_select.html')
+
+    @app.route('/select-shop/<shop_name>')
+    def select_shop(shop_name):
+        if shop_name not in SHOP_NAMES:
+            abort(404)
+        flask_session['active_shop'] = shop_name
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard.index'))
+        return redirect(url_for('auth.login'))
+
+    @app.context_processor
+    def inject_shop_name():
+        shop_name = flask_session.get('active_shop', 'ceramics')
+        return {'active_shop_name': SHOP_NAMES.get(shop_name, SHOP_NAMES['ceramics'])}
     
     # Error handlers
     @app.errorhandler(404)
