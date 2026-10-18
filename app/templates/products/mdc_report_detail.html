@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}MDC Report #{{ report.id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>MDC Report #{{ report.id }}</h1>
+        <p class="text-muted mb-0">
+            Recorded {{ report.report_date.strftime('%b %d, %Y %I:%M %p') }}
+            by {{ report.admin_username or 'Not recorded' }}
+        </p>
+    </div>
+    <a href="{{ url_for('products.mdc_reports') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to MDC Reports
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">MDC Summary</div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <strong>Cash Input</strong>
+                <div>{{ format_currency(report.cash_input) }}</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <strong>Product Value</strong>
+                <div>{{ format_currency(report.product_value) }}</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <strong>Cycle Profit</strong>
+                <div>{{ format_currency(report.cycle_profit) }}</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <strong>Cycle Expenses</strong>
+                <div>{{ format_currency(report.total_expenses) }}</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <strong>Outstanding Debts</strong>
+                <div>{{ format_currency(report.total_debts) }}</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <strong>Total Liquidity</strong>
+                <div>{{ format_currency(report.total_liquidity) }}</div>
+            </div>
+        </div>
+        {% if report.notes %}
+        <div class="mt-2">
+            <strong>Notes</strong>
+            <p class="mb-0">{{ report.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Recorded Products ({{ report.product_records|length }})</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Sold (pcs)</th>
+                        <th>Remaining (pcs)</th>
+                        <th>Cost per Piece</th>
+                        <th>Sell Price per Piece</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in report.product_records %}
+                    <tr>
+                        <td>{{ record.product.name if record.product else 'Product no longer available' }}</td>
+                        <td>{{ record.sold_quantity_pcs }}</td>
+                        <td>{{ record.remaining_quantity_pcs }}</td>
+                        <td>{{ format_currency(record.cost_per_pcs_at_record) }}</td>
+                        <td>{{ format_currency(record.sell_price_per_pcs_at_record) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No product records found for this MDC.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

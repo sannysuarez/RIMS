@@ -10,6 +10,7 @@ class MDCReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     report_date = db.Column(db.DateTime, default=datetime.now, nullable=False, index=True)
     cash_input = db.Column(db.Numeric(12, 2), default=0)
+    admin_username = db.Column(db.String(80))
     notes = db.Column(db.Text)
     # Snapshot fields for immutability: saved at time of MDC creation
     product_value = db.Column(db.Numeric(12, 2), default=0)
@@ -28,6 +29,7 @@ class MDCReport(db.Model):
             'id': self.id,
             'report_date': self.report_date.isoformat(),
             'cash_input': float(self.cash_input),
+            'admin_username': self.admin_username,
             'notes': self.notes
             ,
             'product_value': float(self.product_value),

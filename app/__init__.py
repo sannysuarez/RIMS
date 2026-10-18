@@ -86,6 +86,17 @@ def create_app(config_name=None):
                             f'ALTER TABLE mdc_reports ADD COLUMN {column_name} {column_type} DEFAULT 0'
                         ))
 
+    def ensure_mdc_report_admin_column(engine):
+        """Add the optional administrator attribution to existing MDC reports."""
+        inspector = inspect(engine)
+        if 'mdc_reports' in inspector.get_table_names():
+            columns = [column['name'] for column in inspector.get_columns('mdc_reports')]
+            if 'admin_username' not in columns:
+                with engine.begin() as connection:
+                    connection.execute(text(
+                        'ALTER TABLE mdc_reports ADD COLUMN admin_username VARCHAR(80)'
+                    ))
+
     def ensure_expense_transaction_type_columns(engine):
         """Add transaction_type columns to older SQLite schemas."""
         inspector = inspect(engine)
@@ -159,6 +170,7 @@ def create_app(config_name=None):
         for engine in db.engines.values():
             ensure_mdc_product_record_columns(engine)
             ensure_mdc_report_snapshot_columns(engine)
+            ensure_mdc_report_admin_column(engine)
             ensure_expense_transaction_type_columns(engine)
             ensure_user_phone_number_column(engine)
 

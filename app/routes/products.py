@@ -111,7 +111,11 @@ def mdc():
             return redirect(url_for('products.mdc'))
 
         # Create MDC report for this cycle
-        mdc_report = MDCReport(cash_input=cash_input_value, report_date=datetime.now())
+        mdc_report = MDCReport(
+            cash_input=cash_input_value,
+            report_date=datetime.now(),
+            admin_username=current_user.username
+        )
         db.session.add(mdc_report)
         db.session.flush()  # Flush to get the ID without committing yet
 
@@ -179,6 +183,14 @@ def mdc():
         return redirect(url_for('products.mdc'))
 
     return render_template('products/mdc.html', products=products, latest_mdc=latest_mdc)
+
+
+@products_bp.route('/mdc/reports/<int:report_id>')
+@login_required
+def mdc_report_detail(report_id):
+    """Display a saved MDC report without allowing it to be edited."""
+    report = MDCReport.query.get_or_404(report_id)
+    return render_template('products/mdc_report_detail.html', report=report)
 
 
 

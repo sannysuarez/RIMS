@@ -26,6 +26,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Date</th>
+                    <th>Admin</th>
                     <th>Cash Input</th>
                     <th>Recorded Products</th>
                     <th>Actions</th>
@@ -36,15 +37,16 @@
                 <tr>
                     <td>{{ r.id }}</td>
                     <td>{{ r.report_date.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td>{{ r.admin_username or 'Not recorded' }}</td>
                     <td>{{ format_currency(r.cash_input) }}</td>
                     <td>{{ r.product_records|length }}</td>
                     <td>
-                        <a href="{{ url_for('products.mdc') }}" class="btn btn-sm btn-outline-secondary">Open MDC Form</a>
+                        <a href="{{ url_for('products.mdc_report_detail', report_id=r.id) }}" class="btn btn-sm btn-outline-secondary">View MDC</a>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center">No MDC reports found</td>
+                    <td colspan="6" class="text-center">No MDC reports found</td>
                 </tr>
                 {% endfor %}
             </tbody>
