@@ -431,8 +431,10 @@ pytest --cov=app tests/
 
 ### Gunicorn Command
 ```bash
-gunicorn -w 4 -b 0.0.0.0:8000 "app:create_app()"
+gunicorn -w 4 -b 0.0.0.0:$PORT run:app
 ```
+
+On Render, use `pip install -r requirements.txt` as the build command and `gunicorn -w 4 -b 0.0.0.0:$PORT run:app` as the start command. `requirements-minimal.txt` is for reduced local setups and does not include every application dependency or the production WSGI server.
 
 ## Contributing
 
