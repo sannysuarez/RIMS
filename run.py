@@ -117,6 +117,43 @@ def create_initial_admins():
     create_initial_admins_helper()
 
 
+def reset_initial_admin_passwords_helper():
+    """Reset the named administrators' passwords from Render environment secrets."""
+    accounts = [
+        ('Ibrahim', 'ADMIN_IBRAHIM_PASSWORD'),
+        ('Sanni', 'ADMIN_SANNI_PASSWORD'),
+    ]
+
+    with app.app_context():
+        admins = []
+        for username, password_variable in accounts:
+            password = os.environ.get(password_variable, '')
+            if len(password) < 12:
+                raise SystemExit(
+                    f'Set {password_variable} to a password of at least 12 characters.'
+                )
+
+            admin = User.query.filter_by(username=username).first()
+            if not admin or not admin.is_admin:
+                raise SystemExit(
+                    f'Administrator {username} does not exist; run '
+                    'create-initial-admins first.'
+                )
+            admins.append((admin, password))
+
+        for admin, password in admins:
+            admin.set_password(password)
+
+        db.session.commit()
+        print('Passwords reset successfully for Ibrahim and Sanni.')
+
+
+@app.cli.command()
+def reset_initial_admin_passwords():
+    """Reset both named administrator passwords from environment secrets."""
+    reset_initial_admin_passwords_helper()
+
+
 def seed_categories_helper():
     """Seed default categories"""
     with app.app_context():
@@ -161,6 +198,8 @@ if __name__ == '__main__':
             create_admin_helper()
         elif command == 'create-initial-admins':
             create_initial_admins_helper()
+        elif command == 'reset-initial-admin-passwords':
+            reset_initial_admin_passwords_helper()
         elif command == 'create-default-admin':
             with app.app_context():
                 if User.query.filter_by(username='admin').first():
@@ -186,6 +225,7 @@ if __name__ == '__main__':
             print('  python run.py init-db           - Initialize the database')
             print('  python run.py create-admin      - Create an admin user (interactive)')
             print('  python run.py create-initial-admins - Create Ibrahim and Sanni admins')
+            print('  python run.py reset-initial-admin-passwords - Reset both named admin passwords')
             print('  python run.py create-default-admin - Create default admin (admin/admin123)')
             print('  python run.py seed-categories   - Seed default categories')
             sys.exit(1)

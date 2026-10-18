@@ -198,6 +198,14 @@ The app has a one-time command to create the `Ibrahim` and `Sanni` administrator
 
 Use a persistent database for `DATABASE_URL`; Render's local filesystem is ephemeral, so a SQLite database stored with the service can be lost on redeploy. Both administrator accounts are stored in this primary database and are shared across the two shops.
 
+If the accounts already exist but their passwords do not match the current Render environment values, set fresh password values and temporarily use this Render start command to synchronize them:
+
+```bash
+python run.py reset-initial-admin-passwords && gunicorn -w 4 -b 0.0.0.0:$PORT run:app
+```
+
+After the deployment logs confirm the reset, restore the normal Gunicorn start command. This reset command requires both named accounts to already exist as administrators and does not print their passwords.
+
 ### Configuration Classes
 
 **DevelopmentConfig** (default):
