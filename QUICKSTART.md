@@ -49,7 +49,7 @@ pip install -r requirements.txt
 
 **Note:** If you encounter network issues, try:
 ```powershell
-pip install Flask==3.0.0 Flask-SQLAlchemy==3.1.1 Flask-Login==0.6.3 Flask-WTF==1.2.1 WTForms==3.1.1 Werkzeug==3.0.1 python-dotenv==1.0.0
+pip install Flask==3.0.0 Flask-SQLAlchemy==3.1.1 SQLAlchemy==2.0.49 Flask-Login==0.6.3 Werkzeug==3.0.1 python-dotenv==1.0.0
 ```
 
 ### 2. Initialize Database
@@ -181,7 +181,6 @@ Shop data is isolated between the two databases, which share the same applicatio
 ## 🔒 Security
 
 - ✅ Secure password hashing (Werkzeug)
-- ✅ CSRF protection (Flask-WTF)
 - ✅ Login requirement decorators
 - ✅ Admin-only operation guards
 - ✅ Confirmation dialogs for destructive ops
@@ -214,7 +213,7 @@ cd c:\Users\xgamer\PROJECTS\raasu
 .\venv\Scripts\Activate.ps1
 
 # Install packages (may require internet connection)
-pip install Flask Flask-SQLAlchemy Flask-Login Flask-WTF WTForms Werkzeug python-dotenv
+pip install Flask Flask-SQLAlchemy SQLAlchemy Flask-Login Werkzeug python-dotenv
 
 # Initialize database
 python run.py init-db
@@ -266,7 +265,7 @@ python -c "import flask; print(flask.__version__)"
 ## 🎯 Next Development Steps
 
 1. ✅ **Create template files** for all routes (auth, products, purchases, etc.)
-2. ✅ **Set up form validation** with WTForms
+2. ✅ **Add server-side validation** to form submissions
 3. ✅ **Add CSV import/export** for bulk operations
 4. ✅ **Implement API endpoints** for mobile app
 5. ✅ **Add report generation** (PDF/Excel)

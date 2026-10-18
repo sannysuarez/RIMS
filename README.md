@@ -41,7 +41,7 @@ Backend:
   - Flask 3.0.0          - Lightweight web framework
   - Flask-SQLAlchemy     - ORM for database operations
   - Flask-Login          - User session management
-  - Flask-WTF            - Form handling with CSRF protection
+  - Werkzeug             - Password hashing and WSGI utilities
 
 Database:
   - SQLite3              - Embedded database (production-ready with migration to PostgreSQL)
@@ -215,7 +215,6 @@ Use a persistent database for `DATABASE_URL`; Render's local filesystem is ephem
 **TestingConfig**:
 - Debug: Disabled
 - Database: In-memory SQLite
-- CSRF: Disabled for testing
 
 ## Database Design
 
@@ -330,7 +329,6 @@ Total Liquidity = (Product Inventory Value)
 
 ### Implemented
 - ✅ Secure password hashing (Werkzeug)
-- ✅ CSRF protection (Flask-WTF)
 - ✅ Session management with timeouts
 - ✅ Role-based access control (RBAC)
 - ✅ Login required decorators (@login_required)

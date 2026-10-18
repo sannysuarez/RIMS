@@ -139,7 +139,6 @@ app/utils/
 
 ### Security
 - ✅ Password hashing with Werkzeug
-- ✅ CSRF protection (Flask-WTF)
 - ✅ Session management
 - ✅ Role-based access control
 - ✅ Confirmation dialogs
@@ -205,15 +204,13 @@ app/utils/
 Framework: Flask 3.0.0
 ORM: SQLAlchemy 2.0.49
 Auth: Flask-Login 0.6.3
-Forms: Flask-WTF 1.2.1 + WTForms 3.1.1
 Database: SQLite (dev) / PostgreSQL (prod)
 Python: 3.14+ compatible
 ```
 
-### Dependencies (11 packages)
-- Flask, Flask-SQLAlchemy, Flask-Login, Flask-WTF
-- WTForms, Werkzeug, python-dotenv
-- Pillow, plotly, pandas, openpyxl
+### Dependencies (7 packages)
+- Flask, Flask-SQLAlchemy, SQLAlchemy, Flask-Login
+- Werkzeug, python-dotenv, gunicorn
 
 ### Frontend
 - HTML5, CSS3, JavaScript
