@@ -182,6 +182,22 @@ ITOBE_DATABASE_URL=sqlite:///raasu_itobe.db
 
 The app keeps Shop Ceramics and Shop Itobe data in separate databases. Both use the same schema and application logic. `DATABASE_URL` configures Shop Ceramics and `ITOBE_DATABASE_URL` configures Shop Itobe; if the latter is omitted, the environment-specific Itobe SQLite database is used. User accounts are stored in the shared Shop Ceramics database so the same admin credentials work for both shops.
 
+### Provision the initial administrators on Render
+
+The app has a one-time command to create the `Ibrahim` and `Sanni` administrator accounts in the database configured by `DATABASE_URL`:
+
+1. In the Render web service's **Environment** settings, add `ADMIN_IBRAHIM_PASSWORD` and `ADMIN_SANNI_PASSWORD`, using unique passwords of at least 12 characters. Do not commit these values to the repository.
+2. Optionally set `ADMIN_IBRAHIM_EMAIL` and `ADMIN_SANNI_EMAIL`. If omitted, the accounts use reserved, non-deliverable addresses (`ibrahim@rims.invalid` and `sanni@rims.invalid`); administrators can update their email in account settings after signing in.
+3. Open the service's Render Shell and run:
+
+   ```bash
+   python run.py create-initial-admins
+   ```
+
+4. Remove the two password variables from Render after the command succeeds. The command never prints passwords, skips accounts that are already administrators, and refuses to promote an existing non-admin account.
+
+Use a persistent database for `DATABASE_URL`; Render's local filesystem is ephemeral, so a SQLite database stored with the service can be lost on redeploy. Both administrator accounts are stored in this primary database and are shared across the two shops.
+
 ### Configuration Classes
 
 **DevelopmentConfig** (default):
