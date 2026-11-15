@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models.user import User
+from app.utils.helpers import admin_required
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -29,14 +30,18 @@ def login():
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@login_required
+@admin_required
 def register():
     """User registration (admin only)"""
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
-        
-        if User.query.filter_by(username=username).first():
+
+        if not username or not email or not password:
+            flash('Username, email and password are required', 'error')
+        elif User.query.filter_by(username=username).first():
             flash('Username already exists', 'error')
         elif User.query.filter_by(email=email).first():
             flash('Email already exists', 'error')
@@ -47,7 +52,7 @@ def register():
             db.session.commit()
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('auth.login'))
-    
+
     return render_template('auth/register.html')
 
 

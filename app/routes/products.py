@@ -246,6 +246,16 @@ def add_product():
         cost_per_unit = request.form.get('cost_per_unit', type=float)
         sell_price_per_pcs = request.form.get('sell_price_per_pcs', type=float)
 
+        if quantity_per_unit <= 0:
+            flash('Quantity per unit must be greater than zero', 'error')
+            return redirect(url_for('products.add_product'))
+        if quantity_units <= 0:
+            flash('Quantity units must be greater than zero', 'error')
+            return redirect(url_for('products.add_product'))
+        if cost_per_unit < 0 or sell_price_per_pcs < 0:
+            flash('Cost and selling prices cannot be negative', 'error')
+            return redirect(url_for('products.add_product'))
+
         # Check if product exists (server-side)
         if Product.query.filter_by(name=product_name).first():
             flash('Product already exists', 'error')
