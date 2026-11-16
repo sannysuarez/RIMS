@@ -1,95 +1,88 @@
-
 import os
 import sqlite3
 from pathlib import Path
 from datetime import datetime
 
-# These are the exact database paths configured in the live WSGI file.
 BASE = Path.home() / "RIMS"
-EXPECTED = {
-    "raasu": BASE / "instance" / "raasu_dev.db",
-    "itobe": BASE / "instance" / "raasu_itobe_dev.db",
+
+DATABASES = {
+    "RAASU": BASE / "instance" / "raasu_dev.db",
+    "ITOBE": BASE / "instance" / "raasu_itobe_dev.db",
 }
 
 os.environ["FLASK_ENV"] = "production"
-os.environ["DATABASE_URL"] = f"sqlite:///{EXPECTED['raasu']}"
-os.environ["ITOBE_DATABASE_URL"] = f"sqlite:///{EXPECTED['itobe']}"
+os.environ["DATABASE_URL"] = f"sqlite:///{DATABASES['RAASU']}"
+os.environ["ITOBE_DATABASE_URL"] = f"sqlite:///{DATABASES['ITOBE']}"
 
 from app import create_app, db
-import app as app_package
 from app.models import Category
 
 app = create_app("production")
 
 with app.app_context():
-
-    # Verify the app is connected to exactly the intended databases.
-    engines = db.engines
-    actual = {
-        "raasu": Path(engines[None].url.database).resolve(),
-        "itobe": Path(engines["itobe"].url.database).resolve(),
+    engines = {
+        "RAASU": db.engines[None],
+        "ITOBE": db.engines["itobe"],
     }
 
-    for name, expected in EXPECTED.items():
-        if actual[name] != expected.resolve():
+    # Verify exact database paths.
+    for name, engine in engines.items():
+        actual = Path(engine.url.database).resolve()
+        expected = DATABASES[name].resolve()
+
+        if actual != expected:
             raise RuntimeError(
-                f"Database mismatch for {name}: {actual[name]}"
+                f"{name} database mismatch: {actual}"
             )
 
-    # Check that custom schema helpers are available before resetting.
-    helper_names = [
-        "ensure_mdc_product_record_columns",
-        "ensure_mdc_report_snapshot_columns",
-        "ensure_mdc_report_admin_column",
-        "ensure_expense_transaction_type_columns",
-        "ensure_user_phone_number_column",
-    ]
+        if not actual.exists():
+            raise FileNotFoundError(actual)
 
-    helpers = [getattr(app_package, name) for name in helper_names]
-
-    print("\nDatabases verified:")
-    for name, path in actual.items():
-        print(f"  {name.upper()}: {path}")
+    print("Verified databases:")
+    for name, path in DATABASES.items():
+        print(f"{name}: {path}")
 
     confirmation = input(
-        "\nThis will erase ALL records in both databases. "
+        "\nThis permanently clears BOTH databases. "
         "Type RESET RIMS TEST DATA to continue: "
     )
 
     if confirmation != "RESET RIMS TEST DATA":
-        raise SystemExit("Reset cancelled. No data was deleted.")
+        raise SystemExit("Reset cancelled.")
 
-    # Back up both databases first.
+    # Back up both databases.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = BASE / "db_backups" / f"before_reset_{timestamp}"
     backup_dir.mkdir(parents=True, exist_ok=True)
 
-    for name, path in actual.items():
-        if not path.exists():
-            raise FileNotFoundError(f"Database not found: {path}")
-
+    for name, path in DATABASES.items():
         with sqlite3.connect(str(path)) as source:
-            result = source.execute("PRAGMA integrity_check").fetchone()[0]
-            if result != "ok":
-                raise RuntimeError(f"{name} database integrity check failed: {result}")
+            check = source.execute("PRAGMA integrity_check").fetchone()[0]
+            if check != "ok":
+                raise RuntimeError(f"{name} integrity check failed: {check}")
 
-            backup_path = backup_dir / f"{name}.db"
-            with sqlite3.connect(str(backup_path)) as destination:
-                source.backup(destination)
+            with sqlite3.connect(str(backup_dir / f"{name}.db")) as target:
+                source.backup(target)
 
-        print(f"Backup created: {backup_path}")
+    print(f"\nBackups created: {backup_dir}")
 
-    # Drop and recreate all SQLAlchemy-managed tables in both databases.
+    # Remove all SQLAlchemy-managed tables from both databases.
     for name, engine in engines.items():
         db.Model.metadata.drop_all(bind=engine)
-        db.Model.metadata.create_all(bind=engine)
+        print(f"{name}: old tables cleared.")
 
-        # Restore additional columns maintained by the application.
-        for helper in helpers:
-            helper(engine)
+# Reinitialize the application.
+# create_app recreates tables and runs all five schema migration helpers.
+fresh_app = create_app("production")
 
-        # Seed the configured default categories.
+with fresh_app.app_context():
+    for name, engine in {
+        "RAASU": db.engines[None],
+        "ITOBE": db.engines["itobe"],
+    }.items():
         added = 0
+        existing = set()
+
         with engine.begin() as connection:
             existing = {
                 value.strip().casefold()
@@ -99,7 +92,7 @@ with app.app_context():
                 if value
             }
 
-            for item in app.config["DEFAULT_PRODUCT_CATEGORIES"]:
+            for item in fresh_app.config["DEFAULT_PRODUCT_CATEGORIES"]:
                 category_name = item["name"].strip()
 
                 if category_name.casefold() not in existing:
@@ -112,9 +105,7 @@ with app.app_context():
                     existing.add(category_name.casefold())
                     added += 1
 
-        location = "RAASU" if name is None else str(name).upper()
-        print(f"{location}: reset complete; {added} categories added.")
+        print(f"{name}: {added} categories seeded; {len(existing)} total.")
 
-    print(f"\nBackups saved in: {backup_dir}")
-    print("Both databases have been reset successfully.")
+print("\nBoth databases have been reset and initialized successfully.")
 PY
